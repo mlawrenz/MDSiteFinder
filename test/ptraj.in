@@ -1,0 +1,2 @@
+trajin short.dcd
+trajout short.netcdf netcdf

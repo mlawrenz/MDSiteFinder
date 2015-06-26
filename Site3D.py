@@ -1,0 +1,190 @@
+import sys
+import math
+import pickle
+import multiprocessing
+import optparse
+import pylab
+from numpy import *
+import glob
+import os
+
+# Helper Functions
+def eval_distance(mapped_state_distances, cutoff):
+    # assumes mapped states and state_distances
+    mapped_cutoff_states=[]
+    for state in xrange(len(mapped_state_distances)):
+        # if mindist to protein > cutoff, add to unbound frames 
+        if mapped_state_distances[state] > cutoff:
+            mapped_cutoff_states.append(state)
+    mapped_cutoff_states=array([int(i) for i in mapped_cutoff_states])
+    return mapped_cutoff_states
+
+
+
+def cart2sph(x,y,z):
+    XsqPlusYsq = x**2 + y**2
+    r = math.sqrt(XsqPlusYsq + z**2)               # r
+    elev = math.acos((z/math.sqrt(XsqPlusYsq)))       # theta
+    az = math.atan((y/x))                           # phi
+    return r,  math.degrees(az), math.degrees(elev)
+
+
+def sph2cart(r, az, elev):
+    elev=math.radians(elev)
+    az=math.radians(az)
+    x=r*math.cos(az)*sin(elev)
+    y=r*math.sin(az)*sin(elev)
+    z=r*math.cos(elev)
+    return x,y,z
+    
+def pocket_sphere_coors(radius, center, resolution):
+    sphere_cart_coors=[]
+    for dx in arange(-radius,radius, resolution):
+        for dy in arange(-radius,radius, resolution):
+            for dz in arange(-radius,radius, resolution):
+                sphere_cart_coors.append((center[0]+dx, center[1]+dy, center[2]+dz))
+    return sphere_cart_coors     
+            
+
+def parse_pocket_file(pocket_file):
+    resolution=0.5
+    pocket_data=dict()
+    fhandle=open(pocket_file)
+    n=0
+    for line in fhandle.readlines():
+        if len(line) < 2:
+            break
+        atom=line[0:3]
+        atomnum=line[6:10]
+        atomname=line[12:15]
+        resname=line[16:20]
+        chain=line[21]
+        resnum=line[22:25]
+        xcoor=float(line[30:37])
+        ycoor=float(line[38:45])
+        zcoor=float(line[46:53])
+        # official
+        occupancy=line[58:61]
+        beta=line[60:65]
+        # may want this flex
+        #occupancy=line[67:70]
+        #beta=line[54:59]
+        radius=float(beta)
+        center=(xcoor, ycoor, zcoor)
+        pocket_data[n]=pocket_sphere_coors(radius, center, resolution)
+        n+=1
+    return pocket_data
+
+def get_pocket_minmax(pocket_data, pad=3.0):
+    resolution=0.5
+    xmin=100000
+    xmax=0
+    ymin=100000
+    ymax=0
+    zmin=100000
+    zmax=0
+    coordinates=['x', 'y', 'z']
+    mins=[xmin, ymin, zmin]
+    maxes=[xmax, ymax, zmax]
+    for sphere in sorted(pocket_data.keys()):
+        for coor in pocket_data[sphere]:
+            for (n, k) in enumerate(coordinates):
+                if coor[n]<=mins[n]:
+                    mins[n]=coor[n]
+                elif coor[n]>=maxes[n]:
+                    maxes[n]=coor[n]
+    lengths=dict()
+    for (n, i) in enumerate(coordinates):
+        maxes[n]=maxes[n]+pad
+        mins[n]=mins[n]-pad
+        lengths[n]=int(((round(maxes[n]))-round(mins[n])))
+    box_volume=lengths[0]*lengths[1]*lengths[2]
+    print "pocket box volume %s angstroms^3" % box_volume
+    total=max(lengths.values())
+    ranges=dict()
+    for (n, i) in enumerate(coordinates):
+        #pad=-(lengths[n]-total)
+        #ranges[n]=range(int(round(mins[n])), int(round(maxes[n]+1+(pad*1.0+1))), 1)
+        ranges[n]=arange(int(round(mins[n])), int(round(maxes[n])), resolution)
+    return ranges[0], ranges[1], ranges[2], box_volume
+
+
+
+# Class for 3D Grid
+class Site3D:
+    def __init__(self, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, grid=None):
+        self.pops=pops
+        self.dx =resolution
+        self.dy =resolution
+        self.dz=resolution
+        self.xaxis = array(xaxis)
+        self.yaxis = array(yaxis)
+        self.zaxis = array(zaxis)
+        self.tol=self.dx/2.0
+ 
+    def map_protein_occupancy_grid(self, allcoor):
+        pocketgrid=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+        for frame in xrange(allcoor.shape[0]):
+            framegrid=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+            #see if coor is within grid (defined by axis), if protien coor there close the coor
+            for coor in xrange(allcoor[frame].shape[0]):
+                x_location=where((self.xaxis>=allcoor[frame][coor][0])&(self.xaxis<(allcoor[frame][coor][0])+self.dx))[0]
+                y_location=where((self.yaxis>=allcoor[frame][coor][1])&(self.yaxis<(allcoor[frame][coor][1])+self.dy))[0]
+                z_location=where((self.zaxis>=allcoor[frame][coor][2])&(self.zaxis<(allcoor[frame][coor][2])+self.dz))[0]
+                if len(x_location)==0 or len(y_location)==0 or len(z_location)==0:
+                    #leave as 1
+                    pass
+                else:
+                    framegrid[x_location, y_location, z_location]=0
+            pocketgrid=pocketgrid+framegrid
+        return pocketgrid
+
+ 
+
+    def write_dx(self, GD, dir, filename):
+        newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
+        newfile.write('# Data calculated Pocket open frequency\n')
+        newfile.write('object 1 class gridpositions counts %s %s %s\n' % (GD.shape[0], GD.shape[1], GD.shape[2]))
+        newfile.write('origin %s %s %s\n' % (self.xaxis[0], self.yaxis[0], self.zaxis[0]))
+        newfile.write('delta %s 0 0\n' % self.dx)
+        newfile.write('delta 0 %s 0\n' % self.dy)
+        newfile.write('delta 0 0 %s\n' % self.dz)
+        newfile.write('object 2 class gridconnections counts %s %s %s\n' % (GD.shape[0], GD.shape[1], GD.shape[2]))
+        newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (GD.shape[0]*GD.shape[1]*GD.shape[2]))
+        intergrid=zeros((GD.shape[0], GD.shape[1], GD.shape[2]))
+        count=0
+        for i in range(0, GD.shape[0]):
+            for j in range(0, GD.shape[1]):
+                for k in range(0, GD.shape[2]):
+                    if count==2:
+                        if GD[i][j][k]==0:
+                            newfile.write('%s\n' % int(GD[i][j][k]))
+                        else:
+                            newfile.write('%s\n' % GD[i][j][k])
+                        count=0
+                    else:
+                        if GD[i][j][k]==0:
+                            newfile.write('%s\t' % int(GD[i][j][k]))
+                        else:
+                            newfile.write('%s\t' % GD[i][j][k])
+                        count+=1
+        newfile.write('\nobject "ligand free energy" class field')
+        newfile.close()
+
+    def pmfvolume(self, GD):
+        sum=0
+        oldx=self.xaxis[0]
+        oldval=0
+        for i in range(0, len(self.xaxis)):
+            oldy=self.yaxis[0]
+            for j in range(0, len(self.yaxis)):
+                oldz=self.zaxis[0]
+                for k in range(0, len(self.zaxis)):
+                    if abs(self.zaxis[k]-oldz) !=0:
+                        if GD[i,j, k] != 0:
+                            sum+=GD[i,j, k]*abs(self.xaxis[i]-oldx)*abs(self.yaxis[j]-oldy)*abs(self.zaxis[k]-oldz)
+                    oldz=self.zaxis[k]
+                oldy=self.yaxis[j]
+            oldx=self.xaxis[i]
+        return float(sum)
+ 
