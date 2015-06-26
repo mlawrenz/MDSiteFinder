@@ -1,4 +1,5 @@
 import sys
+import scipy.spatial as sp
 import math
 import pickle
 import multiprocessing
@@ -54,6 +55,7 @@ def parse_pocket_file(pocket_file):
     for line in fhandle.readlines():
         if len(line) < 2:
             break
+        pocket_data[n]=dict()
         atom=line[0:3]
         atomnum=line[6:10]
         atomname=line[12:15]
@@ -71,30 +73,32 @@ def parse_pocket_file(pocket_file):
         #beta=line[54:59]
         radius=float(beta)
         center=(xcoor, ycoor, zcoor)
-        pocket_data[n]=pocket_sphere_coors(radius, center, resolution)
+        pocket_data[n]['center']=center
+        pocket_data[n]['radius']=radius
         n+=1
     return pocket_data
 
-def get_pocket_minmax(pocket_data, pad=3.0):
-    resolution=0.5
+
+def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
+    reduced_coors=dict()
     xmin=100000
     xmax=0
     ymin=100000
     ymax=0
     zmin=100000
     zmax=0
-    coordinates=['x', 'y', 'z']
     mins=[xmin, ymin, zmin]
     maxes=[xmax, ymax, zmax]
     for sphere in sorted(pocket_data.keys()):
-        for coor in pocket_data[sphere]:
-            for (n, k) in enumerate(coordinates):
-                if coor[n]<=mins[n]:
-                    mins[n]=coor[n]
-                elif coor[n]>=maxes[n]:
-                    maxes[n]=coor[n]
+        for frame in xrange(allcoor.shape[0]):
+            for n in range(0,3):
+                new=allcoor[frame][abs(allcoor[frame][:,n]-pocket_data[sphere]['center'][n]) < pocket_data[sphere]['radius']]    
+                if min(new[:,n]) < mins[n]:
+                    mins[n]=min(new[:,n])
+                elif max(new[:,n]) > maxes[n]:
+                    maxes[n]=max(new[:,n])
     lengths=dict()
-    for (n, i) in enumerate(coordinates):
+    for n in range(0,3):
         maxes[n]=maxes[n]+pad
         mins[n]=mins[n]-pad
         lengths[n]=int(((round(maxes[n]))-round(mins[n])))
@@ -102,11 +106,14 @@ def get_pocket_minmax(pocket_data, pad=3.0):
     print "pocket box volume %s angstroms^3" % box_volume
     total=max(lengths.values())
     ranges=dict()
-    for (n, i) in enumerate(coordinates):
-        #pad=-(lengths[n]-total)
-        #ranges[n]=range(int(round(mins[n])), int(round(maxes[n]+1+(pad*1.0+1))), 1)
+    for n in range(0,3):
         ranges[n]=arange(int(round(mins[n])), int(round(maxes[n])), resolution)
-    return ranges[0], ranges[1], ranges[2], box_volume
+    reduced_coors=dict()
+    for frame in xrange(allcoor.shape[0]):
+        matches=where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]<maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
+        reduced_coors[frame]=allcoor[frame][matches]
+    return reduced_coors, ranges[0], ranges[1], ranges[2], box_volume
+
 
 
 
@@ -122,24 +129,29 @@ class Site3D:
         self.zaxis = array(zaxis)
         self.tol=self.dx/2.0
  
-    def map_protein_occupancy_grid(self, allcoor):
-        pocketgrid=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-        for frame in xrange(allcoor.shape[0]):
-            framegrid=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-            #see if coor is within grid (defined by axis), if protien coor there close the coor
-            for coor in xrange(allcoor[frame].shape[0]):
-                x_location=where((self.xaxis>=allcoor[frame][coor][0])&(self.xaxis<(allcoor[frame][coor][0])+self.dx))[0]
-                y_location=where((self.yaxis>=allcoor[frame][coor][1])&(self.yaxis<(allcoor[frame][coor][1])+self.dy))[0]
-                z_location=where((self.zaxis>=allcoor[frame][coor][2])&(self.zaxis<(allcoor[frame][coor][2])+self.dz))[0]
-                if len(x_location)==0 or len(y_location)==0 or len(z_location)==0:
-                    #leave as 1
-                    pass
-                else:
-                    framegrid[x_location, y_location, z_location]=0
-            pocketgrid=pocketgrid+framegrid
-        return pocketgrid
+    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor):
+        # pocketdata has spheres n with center and radii
+        # all coor is all protein coors
+        X,Y,Z=meshgrid(self.xaxis, self.yaxis, self.zaxis)
+        pocketcoors=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
 
- 
+        pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+        for frame in xrange(len(reduced_coor.keys())):
+            frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+            for sphere in sorted(pocketdata.keys()):
+                center=array(pocketdata[sphere]['center'])
+                distance=sp.distance.cdist(reduced_coor[frame], center.reshape(1,-1)).ravel() # find within radius
+                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']]
+                # all points in sphere are proteins entered into the sphere
+                # give a 0 for all these points in the sphere
+                for (i,j,k) in points_in_sphere:
+                    x_location=where((self.xaxis>=i)&(self.xaxis< i+self.dx))[0]
+                    y_location=where((self.yaxis>=j)&(self.yaxis< j+self.dy))[0]
+                    z_location=where((self.zaxis>=k)&(self.zaxis< k+self.dz))[0]
+                    frameoccup[x_location, y_location, z_location]=0
+            pocketoccup+=frameoccup
+        return pocketoccup
+
 
     def write_dx(self, GD, dir, filename):
         newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
@@ -188,3 +200,5 @@ class Site3D:
             oldx=self.xaxis[i]
         return float(sum)
  
+
+

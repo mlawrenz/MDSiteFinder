@@ -32,21 +32,23 @@ is aligned to the reference structure.
 
 #def main(modeldir, genfile, ligandfile, proteinfile, topology, writefree=False):
 def main(pocketfile, trajfile, topo):
+    # load traj
     dir=os.path.dirname(trajfile)
     filename=trajfile.split('%s/' % dir)[1].split('.')[0]
+    traj=mdtraj.load(trajfile, top=topo)
+    newcoors=10*traj.xyz
+    total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
     pocket_data=Site3D.parse_pocket_file(pocketfile)
-    x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data)
-    traj=mdtraj.load(trajfile, top=topo)
+    print "getting min max"
+    reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors)
     space=Site3D.Site3D(xaxis=x_range, yaxis=y_range, zaxis=z_range)
-    #MD traj multiplied coors by 10
-    newcoors=10*traj.xyz
-    tally_occupancy_grid=space.map_protein_occupancy_grid(newcoors)
-    import pdb
-    pdb.set_trace()
-    total_frames=newcoors.shape[0]
-    frequency_grid=tally_occupancy_grid/total_frames
-    space.write_dx(frequency_grid, dir, filename)
+    #get frew
+    print "getting tally"
+    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
+    freq=tally/total_frames
+    print freq.min(), freq.max()
+    space.write_dx(freq, dir, filename)
 
 
 def parse_commandline():

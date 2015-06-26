@@ -1,0 +1,1279 @@
+#svl
+//	sitefind.svl				active site finder
+//
+//	22-mar-2013 (hf) exclude H's from ContactObject (to determine sites) 
+//	21-nov-2012 (hf) fixed potential AlphaSites crash in single linkage
+//	13-apr-2012 (al) added UndoSnapshot
+//	26-jan-2012 (hf) revised clustering, added surface a-sphere view
+//	19-aug-2011 (hf) fixed crash in plb_rName for alt. conf.
+//	03-aug-2011 (hf) added double-linkage clustering, rank by PLB
+//	13-apr-2011 (al) updated for new listbox
+//	22-oct-2010 (cc) bug fix when using isolate backbone
+//	01-sep-2010 (al) added rSetRibbonEnable
+//	05-aug-2010 (al) filter standard sets
+//	04-may-2009 (hf) made AlphaSites global
+//	09-jul-2008 (lc) protect against long tokens in ListBox
+//	15-jan-2008 (lc) allow for synchronized selection mode
+//	25-sep-2007 (lc) desensitize checkboxes when site list is empty
+//	22-feb-2007 (lc) update on actions for "Isolate None".
+//	14-dec-2006 (lc) add the "Show Ligand", "Show Solvent" checkboxes
+//	06-dec-2006 (lc) redo viewing options in "Isolate"
+//	28-jul-2005 (pl) create collections for sites
+//	27-jul-2005 (pl) temp factor of dummies to fradius, robust to close
+//	15-dec-2004 (pl) used graph_ccomponent
+//	19-mar-2002 (pl) gray out Apply during calculation
+//	29-jun-2001 (pm) fixed ResidueDisplayNames to separate the rINS
+//	19-feb-2001 (ms) fixed hidden atoms / backbone bug
+//	01-feb-2001 (ms) redesigned "Receptor:" options
+//	11-jul-2000 (pl) created
+//
+// COPYRIGHT (C) 2000-2013 CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+//
+// PERMISSION TO USE, COPY, MODIFY AND DISTRIBUTE THIS SOFTWARE IS HEREBY
+// GRANTED PROVIDED THAT: (1) UNMODIFIED OR FUNCTIONALLY EQUIVALENT CODE
+// DERIVED FROM THIS SOFTWARE MUST CONTAIN THIS NOTICE; (2) ALL CODE DERIVED
+// FROM THIS SOFTWARE MUST ACKNOWLEDGE THE AUTHOR(S) AND INSTITUTION(S); (3)
+// THE NAMES OF THE AUTHOR(S) AND INSTITUTION(S) NOT BE USED IN ADVERTISING
+// OR PUBLICITY PERTAINING TO THE DISTRIBUTION OF THE SOFTWARE WITHOUT
+// SPECIFIC, WRITTEN PRIOR PERMISSION; (4) ALL CODE DERIVED FROM THIS SOFTWARE
+// BE EXECUTED WITH THE MOLECULAR OPERATING ENVIRONMENT (MOE) LICENSED FROM
+// CHEMICAL COMPUTING GROUP INC.
+//
+// CHEMICAL COMPUTING GROUP INC. DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+// SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS,
+// AND IN NO EVENT SHALL CHEMICAL COMPUTING GROUP INC. BE LIABLE FOR ANY
+// SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+// RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+// CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+#set title	'Site Finder'
+#set class	'MOE:interactive'
+#set version	'2013.03'
+#set main	'AlphaSite_Panel'
+
+function dock_aRadius, dock_AlphaSpheres, dock_ActiveLP;
+function _Atoms;
+function pboltz_AtomParameters, msurf_MolecularSurface, msurf_NearestAtomValue;
+function hclust_tree, hclust_list;
+
+const ALPHASITE_WINDOW_NAME = 'SiteFinder';
+const ALPHASITE_PARM_WINDOW_NAME = 'SiteFinderSettings';
+const SITE_CHAIN_HDR = 'Site Finder';
+
+const ALPHASITE_DEFAULTS = [	// alpha site parameters
+    probe_radius1:	1.4,	// probe radius for LP active accessiblity
+    probe_radius2:	1.8,	// probe radius for non-LP active accessiblity
+    da_dist:		3.0,	// remove all don/acc pts not near a non-don/acc
+    connect_dist:	2.5,	// (A) connect 2 site points if close
+    site_minrad:	2.0,	// minimum max distance to mean
+    site_minsize:	3,	// min # of points in a site
+    linkage:		'msp'
+];
+
+const NBR_CUT = 4.5;		// cutoff distance for neighbor determination
+
+static opt_dock_alphaspheres;			// alpha sphere options
+
+local function Hydrophobe atoms =		// hydrophobic atom test
+    sm_Match [ '[#6!$(*~[#X])]', atoms ]
+;
+
+const SETS = tr [
+    [ 'Receptor Atoms',		'$$receptor'	],
+    [ 'All Atoms',		'$$all'		],
+    [ 'Selected Atoms',		'$$aselected'	],
+    [ 'Unselected Atoms',	'$$unselected' 	],
+    [ 'Selected Residues',	'$$rselected'	],
+    [ 'Selected Chains',	'$$cselected'	]
+];
+
+local function StandardSetTitles []
+    local dynprio = igen l_length SETS;
+    local dynset = (SETS(2)|dynprio)[x_sort pack dynprio];
+    local dyntitle = SETS(1)[indexof [dynset, SETS(2)]];
+
+    local chains = Chains [];
+    local ctag = diff [uniq sort cTag chains, ''];	// chain tags
+    ctag = ctag | not m_findmatch ['$*', ctag];
+
+    local sets = sortuniq oCollections [];		// named sets
+    sets = sets | not m_findmatch [['[$.]*','*~'], sets];
+
+    return [
+	cat [dyntitle, ctag, sets],
+	cat [dynset, tok_cat ['ctag$$',ctag], sets]
+    ];
+endfunction
+
+local function StandardSet [name, visible]
+    local atoms;
+    if name == '$$ligfile' then
+	return [];
+    elseif name == '$$dummy' then
+	atoms = Atoms[];
+	atoms = atoms | aAtomicNumber atoms == 0 and aBondCount atoms == 0;
+    elseif name == '$$recsolvent' then
+	atoms = uniq cat [ _Atoms '$$receptor', _Atoms '$$solvent'];
+    elseif name == '$$all' then
+	atoms = Atoms[];
+    elseif name == '$$unselected' then
+	atoms = Atoms [] | not aSelected Atoms[];
+    elseif m_findmatch ['$$*', name] then
+	atoms = _Atoms name;
+    elseif m_findmatch ['ctag$$*', name] then
+	atoms = Chains[];
+	atoms = atoms | cTag atoms == tok_drop [name, 6];
+	atoms = cat cAtoms atoms;
+    else
+	atoms = cat oAtoms oGetCollection name;
+    endif
+    if istrue visible then
+	atoms = atoms | not aHidden atoms;
+    endif
+    return atoms;
+endfunction
+
+const PORPHYRIN = '[#7]~1~[#6]~5~[#6]~[#6]~[#6]~1~[#6]~[#6]~2~[#6]~[#6]'
+    '~[#6](~[#7]~2)~[#6]~[#6]~3~[#6]~[#6]~[#6](~[#7]~3)~[#6]~[#6]~4~[#6]'
+    '~[#6]~[#6](~[#7]~4)~[#6]~5';
+const UBIQUINONE = '[#6]~1(~[#8])~[#6](~[#8]~[#6])~[#6](~[#8]~[#6])~[#6]'
+    '(~[#8])~[#6](~[#6])~[#6]~1CC=C(C)C';
+
+// based on Soga et al, J. Chem. Inf. Model. 47(2) 2007, pp. 400-406.
+const CCG_RA = tr [
+    ['ALA', 1.063],
+    ['CYS', 1.478],
+    ['CYX', 1.645],  // cystine
+    ['ASP', 1.274],
+    ['GLU', 0.928],
+    ['PHE', 2.054],
+    ['GLY', 1.171],
+    ['HIS', 2.105],
+    ['ILE', 1.292],
+    ['LYS', 0.490],
+    ['LEU', 1.199],
+    ['MET', 1.522],
+    ['ASN', 0.900],
+    ['PRO', 0.523],
+    ['GLN', 0.575],
+    ['ARG', 0.878],
+    ['SER', 1.003],
+    ['THR', 0.852],
+    ['VAL', 1.357],
+    ['TRP', 2.510],
+    ['TYR', 2.254],
+    ['FE', 1.307],
+    ['ZN', 1.801],
+    ['CA', 1.102],
+    ['MN', 1.000],
+    ['CO', 1.000],
+    ['MG', 0.974],
+    ['HEME', 1.000],
+    ['UBIQ', 1.000],
+    ['', 0.000]   // non-AA
+];
+
+local function plb_rName r
+    local n = rName r;
+    local m_cys = n == 'CYS';
+    if orE m_cys then
+	local a = oAtoms (r | m_cys);
+	a = a || aElement a == 'S';
+	a = app first (a || not aInert a);
+	local m_sg = not app isnull a;
+	m_cys | m_cys = m_sg;
+	a = a | m_sg;
+	
+	local m_disulf = app orE ((aElement aBonds a) == 'S');
+	m_cys | m_cys = not m_disulf;
+	n | m_cys = 'CYX'; // oxidized cysteine (cystine)
+    endif
+
+    local m = not indexof [n, droplast CCG_RA(1)];
+    if not orE m then
+	return n;
+    endif
+
+    a = oAtoms (r | m);
+    n | m = put [n | m,	x_pack app orE apt sm_Match [PORPHYRIN, a], 'HEME'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match [UBIQUINONE, a], 'UBIQ'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[FeX0]', a], 'FE'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[ZnX0]', a], 'ZN'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[CaX0]', a], 'CA'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[MnX0]', a], 'MN'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[CoX0]', a], 'CO'];
+    n | m = put [n | m,	x_pack app orE apt sm_Match ['[MgX0]', a], 'MG'];
+    return n;
+endfunction
+
+#if 0
+local function calc_clusters_alt [nl, d, opt]
+    local srt = app x_sort d;
+    d = apt get [d, srt];
+    nl = apt get [nl, srt];
+    local tree = hclust_tree [
+	'average', [nl, d], [verbose: 0, maxscore:  opt.connect_dist]
+    ];
+    local clust = hclust_list [tree, opt.connect_dist];
+    return clust;
+endfunction
+#endif
+
+// Clusters alpha spheres using a complete-linkage-like algorithm though not
+// quite as strict.  It takes a graph in neighbor list format, and the only opt
+// is 'tightness', ranging form zero to one, which indicates the degree of
+// clustering required.  Zero corresponds to single-linkage while one should
+// give the same result as complete-linkage, with values in between varying
+// accordingly.  Return value is a list of the clusters, as indices.
+local function calc_clusters [nl, opt]
+    loop
+	local clusters = graph_ccomponent_list nl;
+	if length clusters > 1 then
+	    break;
+	endif
+	local neighcount = app length nl; // weight on vertices
+	local e = graph_uedges nl;
+	if e === [[], []] then // no edges
+	    return clusters;
+	endif
+
+	    // !!! join is slow
+
+	local shr = apt join [nl[e(1)], nl[e(2)]];
+//	local shr = apt _join_sorted [nl[e(1)], nl[e(2)]];
+
+	    // Compute edge weights as sum of neighbour counts of the common
+	    // neighbours to its two endpoints.  In a perfect cluster this
+	    // would be N^2 for N points, otherwise defines 'tightness' of
+	    // cluster at that edge.
+
+	local ewt = s_add [neighcount[cat shr], app length shr];
+	local idx = x_min ewt;  // pick an edge to cut
+	if ewt(idx) > opt.tightness * sqr length nl then // don't cut; done
+	    return clusters;
+	endif
+    
+	    // Cut graph and weights.
+    
+	nl = graph_ecutE [nl, [e(1)(idx), e(2)(idx)]];
+    endloop
+    local i;
+    for i = 1, length clusters loop
+	local subg = graph_get [nl, clusters(i)];
+	local clust = calc_clusters [subg, opt];
+	clusters(i) = split [clusters(i)[cat clust], app length clust];
+    endloop
+    clusters = cat clusters;
+    return clusters;
+endfunction
+
+local function clamp [x, lo, hi] = maxE [lo, minE [hi, x]];
+
+local function pocketscore [pos, rad, MAXD]
+    const R_WATER = 1.4;		// "water" probe defines interior
+    const R_AVG = 1.2;		// "average" atom radius
+    const R_EXT = 8.0;		// "ligand" probe defines exterior
+    const W_EXTERIOR = sqr (R_AVG + R_EXT) - sqr (R_AVG + R_WATER);
+    const M = 1024;			// round to 1/1024 of an Angstrom
+    local [faces, links] = ialpha_complex3 [M*pos, sqr(M*rad + M*R_WATER)];
+
+    local size = faces(1);				// #of vertices per face
+    local weight = inv sqr M * faces(2);		// face weight
+    local center = inv M * drop [faces, 2];		// face center
+    local [f, g, attached] = links;			// face links
+
+	// Extract simplices (index into faces) and vertices (index into faces)
+	// Keep only links between smx1 and their vertices
+
+    local smx = x_pack (size == max size);		// simplex id
+    local smx1 = smx | weight[smx] >= 0;		// noninterior
+    local smx2 = smx | weight[smx] > W_EXTERIOR;	// exterior
+
+    local N = iadd (size <= 1);				// number of vertices
+    local vtx1 = uniq f[x_join [g,smx1]];
+    local vtx2 = uniq f[x_join [g,smx2]];
+
+    [f,g] = [f,g] || [leE [1,f,N] and indexof [g, smx1]];
+
+	// A_vs: for each vertex, list all simplices that contain the vertex
+	// A_sv: for each smx1, list all vertices contained in the simplex
+	// ff: for each face, if simplex from smx1, list all vertices it
+	// contains A: list all vertices that share a simplex with the vertex
+
+    local A_vs = apt get [[g], indicesof [igen N, f]];
+    local A_sv = apt get [[f], indicesof [smx1, g]];
+    local ff = put [[[]], smx1, A_sv];
+    local A = app uniq app cat apt get [[ff], A_vs];
+
+	// D: distance to the exterior
+	// L: vertex-vertex distance
+
+    MAXD = clamp [MAXD, 0.1, 50]; // De-facto infinity (veeery deeep)
+    local D = rep [MAXD, N];	// Start with Inf everywhere
+    D[pack vtx1] = MAXD-0.01;	// Non-interior vertices (almost Inf)
+    D[pack vtx2] = 0;		// Exterior vertices
+    local i, L = [];
+    for i = N, 1, -1 loop
+	local pos_i = apt peek [center, i];		// this vertex
+	local pos_adj = apt get [center,[A(i)]];	// adjacent vertices
+	L(i) = norm (pos_adj - pos_i);
+    endloop
+
+	// Calculate the weighted graph distance to the closest ext.vertex
+
+    loop
+	local new_D = minE [D, app min (apt get [[D], A] + L)];
+	if D === new_D then break; endif
+	D = new_D;
+    endloop
+    return inv MAXD * D;	// 0=exterior, 1=very deep
+endfunction
+
+// ------------------------------ SITE DETECTION -------------------------------
+
+// AlphaSites accepts a collection of atoms and calculates the individual
+// "interesting" sites/pockets along with relevant grid and contact information.
+// We return a vector whose length is the number of sites and where the i'th
+// element is a tagged vector:
+//
+//	.fpos		sphere feature position
+//	.actlp		1 iff sphere is an "active LP" and 0 otherwise
+//	.grid_shape	.grid_shape(j) is shape data for grid j of site
+//	.grid_hyd	.grid_hyd(j) is hydrophobic "energy" grid data
+//	.grid_pol	.grid_hyd(j) is polar (non-hydrophobic) "energy"
+
+global function AlphaSites [atoms, opt]
+    opt = tagcat [opt, ALPHASITE_DEFAULTS];
+    opt = opt[indexof[tags ALPHASITE_DEFAULTS, tags opt]];	// !!! needed?
+
+    atoms = atoms | not aInert atoms;			// no inert stuff
+    atoms = atoms | aAtomicNumber atoms > 1;		// no light stuff
+
+    local i, seg, idx, mask, prox;
+    local [fpos, frad] = dock_AlphaSpheres [
+	atoms, opt.probe_radius1, opt_dock_alphaspheres
+    ];
+
+    local ftype = dock_ActiveLP [fpos, atoms] > 0;
+
+    if l_length fpos then
+	fpos = fpos || [ftype];				// keep hbonders
+	[frad, ftype] = [frad, ftype] || [ftype];
+    endif
+
+    local [hpos, hrad] = dock_AlphaSpheres [
+	atoms, opt.probe_radius2, opt_dock_alphaspheres
+    ];
+    local htype = dock_ActiveLP [hpos, atoms];
+
+    if l_length hpos then
+	hpos = hpos || [not htype];			// keep hbonders
+	[hrad, htype] = [hrad, htype] || [not htype];
+    endif
+
+    fpos = apt cat [fpos, hpos];
+    frad = cat [frad, hrad];
+    ftype = cat [ftype, htype];
+
+    hpos = hrad = htype = [];
+
+    if fpos === [] then fpos = [[],[],[]]; endif
+
+	// remove any features that are hbond active but have no
+	// 'other' types nearby !!! SCORE KNOWN DONORS/ACCEPTORS
+
+    prox = prox_open [opt.da_dist, fpos, opt.da_dist];
+    [seg,idx] = prox_find [prox, fpos, 0];
+    prox_close prox;
+
+    local pol = ftype;
+    mask = not pol or (pol and not app andE split [pol[idx], seg]);
+
+    fpos = fpos || [mask];
+    [frad,ftype] = [frad,ftype] || [mask];
+
+	// compute the neighbor graph of the alpha spheres and then
+	// compute connected components into 'comp' (vector if index lists)
+
+    local xbond, sdist;
+    prox = prox_open [opt.connect_dist, fpos, opt.connect_dist];
+    [seg, xbond, sdist] = prox_find [prox, fpos, 0];
+    prox_close prox;
+    xbond = split [xbond,seg];
+    local comp = [], label = [];
+    if opt.linkage === 'single' then
+	comp = graph_ccomponent xbond;
+    elseif opt.linkage === 'complete' or opt.linkage === 'average' then
+	local dist = split [sqrt sdist, seg];
+	local srt = app x_sort dist;
+	dist = apt get [dist, srt];
+	xbond = apt get [xbond, srt];
+	local tree = hclust_tree [
+	    opt.linkage, [xbond, dist], [verbose: 0, maxscore: opt.connect_dist]
+	];
+	local clst = hclust_list [tree, opt.connect_dist];
+	comp[cat clst] = cat stretch [igen length clst, app length clst];
+    else // double
+	comp = (graph_dfs2 xbond)(7);
+	comp | not comp = max comp + igen add not comp;
+    endif
+    [idx,mask] = sam comp;			// sort by conn. comp.
+    comp = split [idx, mtoc mask];		// components
+
+    if opt.linkage === 'msp' then
+	local MSP_CUTOFF = 2.5;
+	local MSP_RECLUSTER_CUTOFF = 3.0;
+	local TIGHTNESS = 0.65;
+	if length atoms < 2500 then
+	    MSP_CUTOFF = 3.0;
+	    MSP_RECLUSTER_CUTOFF = 3.5;
+	endif
+
+	    // Break into subsites using minimum spanning tree like algorithm.
+
+	for i = 1, length comp loop
+	    local d2;
+	    local sphpos = apt get [fpos, [comp(i)]];
+	    prox = prox_open [MSP_CUTOFF, sphpos, 0];
+	    [seg, idx, d2] = prox_find [prox, sphpos, MSP_CUTOFF];
+	    prox_close prox;
+	    local nl = split [idx, seg]; // neighbor-list graph
+	    local clust = calc_clusters [
+		nl, //split [sqrt d2, seg],
+		[tightness: TIGHTNESS]//, connect_dist: 12.0]
+	    ];
+	    comp(i) = apt get [[comp(i)], clust];
+	endloop
+	comp = cat comp;
+	label = split [
+	    stretch [igen length comp, app length comp], app length comp
+	];
+
+	    // recluster subsite cluster centers
+
+	local keeppos = apt get [fpos, [cat comp]];
+	local clustcentr = apt s_add [keeppos, nest app length comp] *
+	    [invz app length comp];
+	prox = prox_open [MSP_RECLUSTER_CUTOFF, clustcentr, 0];
+	[seg, idx] = prox_find [prox, clustcentr, MSP_RECLUSTER_CUTOFF];
+	prox_close prox;
+	local e = [stretch [x_id seg, seg], idx];
+	e = e || [e(1) < e(2)];
+	local neigh = graph_uneighbors [e(1), e(2), length comp];
+	local ncomp;
+	if length atoms < 4000 then
+	    ncomp = graph_ccomponent neigh;
+	else
+	    ncomp = (graph_dfs2 neigh)(7);
+	endif
+	ncomp | not ncomp = max ncomp + igen add not ncomp;
+	local x = x_sort ncomp; // convert from 'comp' to 'comp_list'
+	ncomp = split [x, btoc ncomp[x]];
+	comp = app cat split [comp[cat ncomp], app length ncomp];
+	label = app cat split [label[cat ncomp], app length ncomp];
+    endif
+
+	// compute the number of hydrophobic and hbonding contacts
+	// for each site and also analyze each site for size
+
+    local plb = rep [0, length comp];		// PLB score
+
+    const PLB_CUTOFF = 4.5;			// PLB contact cutoff
+    prox = prox_open [PLB_CUTOFF, aPos atoms, 0];
+
+    for i = 1, length comp loop
+	idx = comp(i);
+	[seg, idx] = prox_find [prox, apt get [fpos, [idx]], PLB_CUTOFF];
+	local reshere = oParent atoms[idx];
+	srt = x_sort reshere;
+	reshere = reshere[srt];
+	idx = idx[srt];
+	local nat = btoc reshere;
+	local [rad, eps] = pboltz_AtomParameters atoms[idx];
+	local pscore = pocketscore [aPos atoms[idx], rad, 10];
+	local avgdepth = s_max [pscore, nat]; // 1=deep, 0=exposed
+	idx = indexof [plb_rName uniq reshere, CCG_RA(1)];
+	local ra = one idx;
+	ra | idx = CCG_RA(2)[pack idx];
+	plb(i) = add (avgdepth * ra); 
+    endloop
+
+    prox_close prox;
+
+    mask = rep [0, length comp];
+
+    for i = 1, length comp loop
+	local pts = apt get [ fpos, [comp(i)] ];		// comp. points
+	pts = pts - app add pts * invz l_length pts;		// 0-center
+	mask(i) = maxE app maxE abs pts >= opt.site_minrad;	// !!! CHECK!
+    endloop
+
+    mask = mask and app length comp >= opt.site_minsize;
+
+    [comp, plb] = [comp, plb] || [mask];
+    if not isnull label then
+	label = label | mask;
+    endif
+
+	// sort by "activesiteness" score
+
+    idx = x_sort (-plb);
+    comp = comp[idx];
+    plb = plb[idx];
+    if not isnull label then
+	label = label[idx];
+    endif
+
+	// re-adjust fpos, frad and ftype to the permuted component
+	// order (and recompute the segment vector)
+
+    idx = cat comp;
+    fpos = apt get [fpos, [idx]];
+    [frad,ftype] = apt get [ [frad,ftype], [idx] ];
+ 
+	// format the site data into a tagged vector of site information
+	// and calculate the energy potentials for each site
+
+    local fseg = app length comp;
+    local site = rep [[], length fseg];
+
+    fpos = tr apt split [fpos, [fseg]];
+    frad = split [frad, fseg];
+    ftype = split [ftype, fseg];
+
+	// Normalize PLB score
+
+    local meanplb = add plb * invz length plb;
+    local sdplb = sqrt ((add sqr (plb - meanplb)) * invz length plb);
+    plb = (plb - meanplb) * invz sdplb;
+
+    for i = 1, length site loop
+	site(i) = [
+	    fpos:	fpos(i),	// alpha sphere positions
+	    frad:	frad(i),	// alpha sphere radii
+	    actlp:	ftype(i),	// active LP flag
+	    plb:        plb(i),
+	    label:      label(i)
+	];
+    endloop
+
+    return site;
+endfunction
+
+// ---------------------- SITE DETECTION OPTIONS PANEL -----------------------
+
+// SetSiteOptions raises a panel to set the various site finding options.  We
+// are given the parent panel (0 for none).  If there is a parent panel we
+// look at and modify the 'sitefind_options' SVL data widget.
+
+local function SiteOptionsPanel [par_wkey, window_name, widget_name]
+    if par_wkey then
+	local opt = (WindowGetData[par_wkey,widget_name]).(widget_name);
+    endif
+    opt = tagcat [opt, ALPHASITE_DEFAULTS];
+    opt = opt | indexof [tags opt, tags ALPHASITE_DEFAULTS];	// !!! needed?
+
+    if WindowShow [window_name,1] then return; endif
+    if not (second task_fork [master:'parent'] === 'child') then return; endif
+
+    local wkey = WindowCreate [
+	title: 'Site Finder Settings', windowName: window_name,
+	text: ['Apply','Close'], onTrigger: ['return','exit'],
+
+	Text : [
+	    name: 'probe_radius1', title: 'Probe Radius 1:',
+	    type: 'real', len: 10, min: 0,
+	    bubbleHelp:
+		'The radius of the sphere to use for\n'
+		'accessibility to LP-active atoms.'
+	],
+	Text : [
+	    name: 'probe_radius2', title: 'Probe Radius 2:',
+	    type: 'real', len: 10, min: 0,
+	    bubbleHelp:
+		'The radius of the sphere to use for\n'
+		'accessibility to non-LP-active atoms.'
+	],
+
+	Text : [
+	    name: 'da_dist', title: 'Isolated Donor/Acceptor:',
+	    type: 'real', len: 10, min: 0,
+	    bubbleHelp:
+		'Retain only those donor/acceptor alpha points\n'
+		'that have a non-donor/acceptor point neighbor\n'
+		'within the specified distance.'
+	],
+
+	Text : [
+	    name: 'connect_dist', title: 'Connection Distance:',
+	    type: 'real', len: 10, min: 0,
+	    bubbleHelp:
+		'Two alpha points will be considered part of the same site\n'
+		'if their separation distance is less than the given value.'
+	],
+
+	Hbox : [
+	    Text : [
+		name: 'site_minsize', title: 'Minimum Site Size:',
+		type: 'int', len: 10, min: 0,
+		bubbleHelp:
+		    'Retain only those sites that have at least\n'
+		    'the given number of alpha points.'
+	    ],
+	    Text : [
+		name: 'site_minrad', title: 'Radius:',
+		type: 'real', len: 10, min: 0,
+		bubbleHelp:
+		    'Remove all sites whose maximum distance to the mean\n'
+		    'site point is less than the given value.'
+	    ]
+	],
+	Data : [name: 'linkage']
+    ];
+
+    WindowSetData [wkey, opt];
+    WindowShow wkey;
+
+    loop
+	local [val] = WindowWait wkey;
+	WindowSetData [par_wkey, tag [widget_name,[val]]];
+    endloop
+
+    WindowDestroy wkey;
+    exit[];
+endfunction
+
+// ---------------------------------- MAIN PANEL -----------------------------
+
+const HEADER = 'Site{4n}\tSize{4n}\tPLB{+5n}\tHyd{4n}\tSide{4n}\tResidues';
+const FMT = '{n:4}\t{n:4}\t{n:5.2f}\t{n:4}\t{n:4}\t{}';	// list item format
+
+const PANEL = [
+    windowName: ALPHASITE_WINDOW_NAME,
+    name: 'panel', title: 'Site Finder',
+    text: ['Apply', 'Dummies...', 'Settings...', 'Close'],
+    onTrigger: ['return','return','return','exit'],
+
+    Data : [name:'alphasite_options'],
+
+    Hbox : [
+	Option : [
+	    title: 'Atoms:', name: 'receptor', text: first SETS, type:'int',
+	    bubbleHelp:
+		'Sites are calculated using only the specified atoms.\n'
+		'Light atoms and inert atoms are always ignored.\n'
+		'Salts and solvent atoms are ignored unless the\n'
+		'Solvent checkbox is on. Hidden atoms are ignored\n'
+		'if the Visible Only checkbox is on.'
+	],
+	Checkbox: [ name: 'useSS', text : 'Solvent' ],
+	Checkbox: [ name: 'visonly', text : 'Visible Only' ],
+	    bubbleHelp:
+		'Sites are calculated using only the specified atoms.\n'
+		'Light atoms and inert atoms are always ignored.\n'
+		'Salts and solvent atoms are ignored unless the\n'
+		'Solvent checkbox is on. Hidden atoms are ignored\n'
+		'if the Visible Only checkbox is on.'
+    ],
+
+    Separator : [flushLeft:1],
+
+    Listbox : [
+	name: 'list', type: 'int', multiSelect: 2, onTrigger: 'return',
+	len: 10, width: 50, flushLeft: 1, extendH: 1, extendV: 1,
+	sortEnable: 1,
+	header: HEADER
+    ],
+
+    Mbox : [
+	flushLeft:1, columns:3, extendH: 1,
+	name: 'list_actions',
+
+//	Hbox: [
+	    Option : [
+		title: 'Render:',
+		name: 'disp_spheres', type: 'int', onTrigger: 'return',
+		text: ['No Centers', 'Alpha Centers', 'Alpha Spheres',
+		    'Pocket Surface'],
+		extendH: 1,
+		bubbleHelp:
+		    'The rendering mode for the alpha spheres of the\n'
+		    'selected sites. Alpha Centers draws a small sphere\n'
+		    'for each alpha sphere. Alpha Spheres draws a sphere\n'
+		    'with radius equal to the alpha radius.  Pocket\n'
+		    'surface draws a smooth surface enveloping the alpha\n'
+		    'spheres.\n'
+	    ],
+
+	    Checkbox : [
+		text: 'Select Contact Atoms', name: 'disp_aselect',
+		onTrigger: 'return',
+		bubbleHelp:
+		    'Select atoms within 4.5 Angstroms of the selected sites.'
+	    ],
+
+	    Checkbox : [
+		text: 'Select Residues in SE', name: 'disp_isoresidue',
+		onTrigger:'return',
+		bubbleHelp:
+		    'If checked then the residues close to alpha spheres\n'
+		    'will be selected or deselected in the Sequence Editor\n'
+		    'according to the site selection.'
+	    ],
+//	],
+
+//	Hbox: [
+	    Option : [
+		name: 'disp_isolate', title: 'Isolate:', onTrigger: 'return',
+		text: [ 'None', 'Atoms and Backbone', 'Atoms', 'Backbone'],
+		extendH: 1,
+		bubbleHelp:
+		    'Controls if the pocket(s) around the selected site(s)\n'
+		    'will be isolated, and if so, how will they be rendered.'
+	    ],
+
+	    Checkbox: [
+		text: 'Show Ligands', name: 'showligand',
+		onTrigger:'return',
+		bubbleHelp:
+		    'Display ligands in the selected site(s).'
+	    ],
+
+	    Checkbox: [
+		text: 'Show Solvent', name: 'showsolvent',
+		onTrigger:'return',
+		bubbleHelp:
+		    'Display solvent atoms in the selected site(s).'
+	    ]
+//	]
+    ]
+];
+
+// DrawSpheres draws a collection of spheres at given positions with given
+// radii and given colors.  The quality is fixed.
+
+local function DrawSpheres [gobj, fpos, rad, rad2, color, label]
+    local i;
+    local sphere1 = G_Sphere [0xFFFFFF, [0,0,0], 1, 1];
+    local sphere2 = G_WireSphere [0xFFFF, [0,0,0], 1, 2];
+
+    rad = resize [rad, l_length fpos];
+    color = resize [color, l_length fpos];
+
+    for i = 1, l_length fpos loop
+	local org = apt peek [fpos,i];
+	local s = sphere1;
+	s(3) = color(i);
+	s(4) = s(4) * rad(i) + org;
+	GVertex prepend [ s, gobj ];
+
+	if rad2(i) > 0 then
+	    s = sphere2;
+	    s(3) = color(i);
+	    s(4) = s(4) * rad2(i) + org;
+	    GVertex prepend [ s, gobj ];
+	endif
+	if not isnull label then
+	    GText cat [gobj, color(i), rad(i) + org, totok label(i)];
+	endif
+    endloop
+endfunction
+
+// ContactObjects calculates which objects in the system contact the a
+// collection of spheres given by 'pos'.  We are passed the atoms to consider
+// and return a tagged vector containing
+//
+//	.chain		chain objects that contact the spheres
+//	.res		residue objects that contact the spheres
+//	.res_serial	Serial number of .res
+//	.atom		atom objects that contact the spheres (<= 4.5A)
+//	.others		atoms other than rec_atoms that contact the spheres
+
+local function ContactObjects [rec_atoms, pos]
+    local obj = [];
+
+    if l_length pos <= 0 or length rec_atoms <= 0 then
+	return obj;
+    endif
+
+    local prox = prox_open [NBR_CUT, pos, NBR_CUT];
+
+	// receptor atoms in contact
+
+    local atoms = rec_atoms | (aAtomicNumber rec_atoms > 1);
+    obj.atom = atoms | first prox_find [prox, aPos atoms, 0];
+    obj.res = uniq oParent obj.atom;
+    obj.res_serial = oSerialNumber obj.res;
+    obj.chain = uniq oParent obj.res;
+
+	// other atoms (dummy or not) in contact
+
+    local oth = diff [Atoms[], rec_atoms];
+    obj.others = oth | first prox_find [prox, aPos oth, 0];
+
+    prox_close prox;
+
+    return obj;
+endfunction
+
+// DrawContactObjects draws the calculated contact objects according to the
+// panel options given by val.
+// Possible options are: 'None', 'Atoms', 'Atoms and Backbone', 'Backbone'.
+
+local function DrawContactObjects [obj, orig, val, trig]
+    local m;
+    local all_atoms = Atoms[];
+
+    function Show atoms
+	aSetHidden [atoms, sm_Match ['[!#Q][#6]', atoms]];
+    endfunction
+
+    if val.disp_aselect then
+	aSetSelected [all_atoms, m_join [all_atoms, obj.atom]];
+    else
+	    // restore original selection
+
+	m = m_join [orig.atoms, all_atoms];
+	aSetSelected [orig.atoms | m, orig.asel | m];
+    endif
+
+    if val.disp_isolate == 'None' then
+
+	if trig == 'disp_isolate' then
+
+		// restore original visibility
+
+	    aSetHidden [all_atoms, 0];
+	    m = m_join [orig.atoms, all_atoms];
+	    aSetHidden [orig.atoms | m, orig.ahide | m];
+	endif
+
+    else
+
+	aSetHidden [all_atoms, 1];
+
+	if val.disp_isolate <> 'Backbone' then
+	    Show cat rAtoms obj.res;			// show pocket
+	endif
+
+	local ch = Chains [];
+	local sitedum = cat cAtoms (ch | cHeader ch == SITE_CHAIN_HDR);
+	aSetHidden [join [sitedum, obj.others], 0];	// show site dummies
+
+	if val.showligand then
+	    local lignear = join [obj.others, _Atoms '$$ligand'];
+	    Show cat rAtoms uniq oParent lignear;
+	endif
+
+	if val.showsolvent then
+	    local solnear = join [obj.others, _Atoms '$$solvent'];
+	    Show cat rAtoms uniq oParent solnear;
+	endif
+    endif
+
+    local all_res = Residues[];
+
+	// If selection is synchronized and contact atoms are selected,
+	// let atom selection (above) take over residue selection.
+
+    if not (SyncSelection [] and istrue val.disp_aselect) then
+
+	if istrue val.disp_isoresidue then
+	    rSetSelected [all_res, m_join [all_res, obj.res]];
+	else
+		// restore original selection
+
+	    m = m_join [orig.residues, all_res];
+	    rSetSelected [orig.residues | m, orig.rsel | m];
+	endif
+    endif
+
+	// BACKBONE DISPLAY
+
+    if val.disp_isolate == 'Atoms' then	// no backbone rendering
+
+	rSetRibbonMode [all_res, 'none'];
+	rSetRibbonEnable [all_res, 0];
+
+    elseif val.disp_isolate <> 'None' then
+
+	    // first restore original backbone rendering
+
+	m = m_join [orig.residues, all_res];
+
+	    // If any of the residues ribbon mode is set to 'none'
+	    // set to 'auto'. This enables the user to display the ribbon
+	    // when select backbone or atoms & backbone in the isolate option.
+
+	local rmode = orig.rmode | m;
+	rmode | (rmode == 'none') = 'auto';
+	
+	rSetRibbonMode [orig.residues | m, rmode ];
+	rSetRibbonEnable [orig.residues | m, rmode <> 'none'];
+
+	    // determine which residues to display (backbone) by taking
+	    // the display atoms' residue parents and extending to the
+	    // neighboring residues
+
+	local rhits = obj.res;
+	local [idx,mask] = sam oParent rhits;	// chains
+	rhits = split [rhits[idx], mtoc mask];	// group into chains
+
+	local i;
+	for i = 1, length rhits loop
+	    local cres = cat cResidues oParent first rhits(i);
+	    mask = indexof [cres, rhits(i)];
+	    rhits(i) = cres | (mask or shiftr mask or shiftl mask);
+	endloop
+        rhits = join [cat rhits, all_res];
+	rSetRibbonMode [diff [all_res, rhits], 'none'];
+	rSetRibbonEnable [diff [all_res, rhits], 0];
+
+	    // use original backbone mode if possible
+
+	m = uniq rmode;
+	if 1 <> length m then m = 'auto'; endif
+	rSetRibbonMode [rhits | rRibbonMode rhits == 'none', m];
+	rSetRibbonEnable [rhits | rRibbonMode rhits == 'none', m <> 'none'];
+
+    elseif trig == 'disp_isolate' then	// by now val.disp_isolate == 'None'
+
+	    // restore original backbone rendering
+
+	m = m_join [orig.residues, all_res];
+	rSetRibbonMode [orig.residues | m, orig.rmode | m];
+	rSetRibbonEnable [orig.residues | m, (orig.rmode | m) <> 'none'];
+
+    endif
+endfunction
+
+// ResidueDisplayNames calculates the text to display summarizing the active
+// site.  We print names of the residues (essentially).
+
+const MAXTLEN = 8000;
+
+local function ResidueDisplayNames res 		// display name
+    res = res[x_sort rNumber res];
+    res = res[x_sort cNumber oParent res];
+
+    local [idx,mask] = sam oParent res;
+    res = split [res[idx], mtoc mask];
+
+    local text = [];
+    local i;
+
+    for i = 1, length res loop
+	local t = droplast cat apt swrite [ '{}{}{} ',
+	    rName res(i),
+	    select [rNumber res(i), rUID res(i), andE (rUID res(i) == 0)],
+	    select [app token rINS res(i), '', rINS res(i) <> " "]
+	];
+
+	    // truncate if t is too long
+
+	if length t > MAXTLEN then
+	    t = cat [keep [t, MAXTLEN-50], " ... ", keep [t, -40]];
+	endif
+
+	text = append [text, twrite ['{}:({})',
+	    cNumber oParent first res(i),
+	    t
+	]];
+    endloop
+
+    return tok_cat text;
+endfunction
+
+// AlphaSite_Panel raises the Site Finder panel and handles events.
+
+global function AlphaSite_Panel opt
+    static gobj;
+
+    if not (second task_wfork[statics:'share', master:'parent']==='child') then
+	GDestroy gobj;
+	return;
+    endif
+
+    opt = tagcat [opt, ALPHASITE_DEFAULTS];
+    opt = opt[indexof[tags ALPHASITE_DEFAULTS, tags opt]];	// !!! needed?
+
+    opt_dock_alphaspheres = [
+	w_small:	 5.0,	// retain alpha spheres with radis < w_small
+	w_deep0:	40.0,	// retain alpha spheres if <= 0 vtx has alpha=x
+	w_deep1:	 6.0	// retain alpha spheres if <= 1 vtx has alpha=x
+    ];
+
+    if WindowShow [ALPHASITE_WINDOW_NAME,1] then
+	return;
+    endif
+
+    local wkey = WindowCreate PANEL;
+    local site = [];				// ALPHA SITE INFORMATION
+    local rec_atoms = [];			// receptor atoms of site
+
+	// start a monitor task to keep track of the sets
+
+    static r_sets, r_names;
+    [r_sets,r_names] = StandardSetTitles [];
+
+    WindowSetAttr [wkey, [ receptor: [text: r_sets] ]];
+
+    if second task_fork [statics:'share', master: 'parent'] == 'child' then
+	task_idle 1;
+	loop
+	    sleep 0.25;
+	    local [nr_sets, nr_names] = StandardSetTitles[];
+	    if not ([r_sets, r_names] === [nr_sets, nr_names]) then
+		[r_sets, r_names] = [nr_sets, nr_names];
+		WindowSetAttr [wkey,[receptor:[text: r_sets]]];
+	    endif
+	endloop
+    endif
+
+    local orig = [	// record original settings
+	atoms:		Atoms [],
+	asel:		aSelected Atoms [],
+	ahide:		aHidden Atoms [],
+	residues:	Residues [],
+	rsel:		rSelected Residues [],
+	rmode:		rRibbonMode Residues []
+    ];
+
+	// CalculateData calculates the alpha data from the given panel
+	// information and the loaded molecules.  We then load the panel
+	// list with the relevant information
+
+    local function CalculateData val
+	local i;
+//	local old_sel = sort first val.list;
+//	local all_sel = (length old_sel == length site);
+
+	local opt = val.alphasite_options;
+
+	local old_prio = task_prio 0;
+	    rec_atoms = StandardSet r_names(val.receptor);
+	    if isfalse val.useSS then
+		rec_atoms = diff [rec_atoms, _Atoms '$$solvent'];
+	    endif
+	    if istrue val.visonly then
+		rec_atoms = rec_atoms | not aHidden rec_atoms;
+	    endif
+	    rec_atoms = rec_atoms | not (
+		   aAtomicNumber rec_atoms == 0 and aBondCount rec_atoms == 0
+		or aInert rec_atoms
+	    );
+	    site = AlphaSites [rec_atoms, opt];
+	task_prio old_prio;
+
+	local list_text = rep ['', length site];
+
+	for i = 1, length list_text loop
+	    local obj = ContactObjects [rec_atoms, site(i).fpos];
+	    site = poke [
+		site, i, tagpoke [site(i), 'res_serial', obj.res_serial]
+	    ];
+	    list_text(i) = token swrite [ FMT,
+		i,
+		l_length site(i).fpos, //length obj.atom,
+		site(i).plb,
+		iadd notnot (Hydrophobe obj.atom),
+		add not aBackbone obj.atom,
+		ResidueDisplayNames obj.res
+	    ];
+	endloop
+
+	WindowSetAttr [wkey, [ list: [text: list_text] ]];
+/*
+	if all_sel then	old_sel = x_id site;
+	else		old_sel = old_sel | old_sel <= length site;
+	endif   
+*/
+	WindowSetData [wkey, [list: keep [1, length site]]];
+    endfunction
+
+	// SelectedSites returns the tagged vector of those selected
+	// sites in the list
+
+    function SelectedSites []
+	local idx = first (WindowGetData[wkey, 'list']).list;
+	idx = idx | (idx > 0 and idx <= length site);
+	idx = sort idx;
+	return [site[idx], idx];
+    endfunction
+
+	// DisplayData draws the active site along with other contact
+	// objects as set by the Highlight checkboxes
+
+    local old_disp_isolate = 'None';
+    function DisplayData [val, trig]
+	local i, j;
+	local sel_site = first SelectedSites [];
+
+	local fpos = apt cat apt tagpeek [sel_site,'fpos'];
+	local obj = ContactObjects [rec_atoms | oType rec_atoms=='atom', fpos];
+	DrawContactObjects [obj, orig, val, trig];
+
+	local dispmode = dec val.disp_spheres;
+
+	if dispmode then
+	    const GOBJ_NAME = 'Site Finder';
+	    gobj = GCreateUnique GOBJ_NAME;
+
+	    for i = 1, length sel_site loop
+		local color = rep [icolor'gray', l_length sel_site(i).fpos];
+		(color | sel_site(i).actlp) = icolor'red';
+		if dispmode == 3 then // surface
+		    local surf = msurf_MolecularSurface [
+			sel_site(i).fpos, sel_site(i).frad, 0.1 /*vdwE*/,
+			sel_site(i).fpos, 2.0 + max sel_site(i).frad,
+			[spacing: 1.5, type: 'Connolly', probe_vdwR: 1.4,
+			minspacing: 1.0]
+		    ];
+		    local vtx = grid_isoidx_emit [surf(1), 3, -1];
+		    local vcolor = first msurf_NearestAtomValue [
+			surf(3),
+			sel_site(i).fpos,
+			[1, 0, 0],
+			sel_site(i).frad,
+			[sel_site(i).actlp],
+			[sel_site(i).actlp],
+			[wfcn: 'exp']
+		    ];
+		    vcolor = grid_color_at [
+			icolor ['gray', 'red'], [[0, 1]], [vcolor]
+		    ]; 		    
+		    GVertex [gobj, 3, vtx, vcolor, surf(3), surf(4)];
+		else
+		    local srad = select [sel_site(i).frad, 0, dispmode == 2];
+		    DrawSpheres [
+			gobj, sel_site(i).fpos, 0.4, srad, color
+//			,sel_site(i).label
+		    ];
+		endif
+	    endloop
+	else
+	    local glist = GList 1;
+	    GDestroy (first glist | last glist == GOBJ_NAME);
+	    gobj = [];
+	endif
+
+	if val.disp_isolate <> 'None' then
+	    if trig == 'list' or old_disp_isolate == 'None' then
+		View cat rAtoms obj.res;
+	    endif
+	endif
+	old_disp_isolate = val.disp_isolate;
+
+    endfunction
+
+	// calculate the initial data and then fall into the event loop
+
+    local i, obj, val, trig;
+
+    WindowSetData [wkey, [		// panel defaults
+	useSS:			0,
+	visonly:		0,
+	disp_spheres:		2
+    ]];
+    WindowShow wkey;			// show the panel
+
+    loop
+	val = WindowValues wkey;
+
+	if isnull first val.list then
+
+		// nothing on the site list, reset options on panel
+
+	    WindowSetData [wkey, [
+		disp_isolate: 'None',
+		disp_aselect: 0,
+		disp_isoresidue: 0
+	    ]];
+	    val = WindowValues wkey;
+
+		// redraw as if the Isolate pulldown menu has been changed
+
+	    DrawContactObjects [[], orig, val, 'disp_isolate'];
+	endif
+
+	WindowSetAttr [wkey, [
+	    panel: [sensitive: [1, notnot length first val.list, 1, 1 ]],
+	    list_actions: [sensitive: length first val.list],
+	    showligand: [sensitive: val.disp_isolate <> 'None'],
+	    showsolvent: [sensitive: val.disp_isolate <> 'None']
+	]];
+
+	[val,trig] = WindowWait wkey;
+
+	if trig === 'panel' then
+	    if val.(trig) === 'Settings...' then
+
+		SiteOptionsPanel [
+		    wkey, ALPHASITE_PARM_WINDOW_NAME, 'alphasite_options'
+		];
+		continue;
+
+	    elseif val.(trig) === 'Apply' then
+
+		WindowSetAttr [wkey, [panel: [ sensitive: [0,0,0,0] ]]];
+		CalculateData val;
+		WindowSetAttr [wkey, [panel: [ sensitive: [1,1,1,1] ]]];
+
+	    elseif val.(trig) === 'Dummies...' then
+
+		local [sel_site,sel_idx] = SelectedSites[];
+
+		if not YesNo 'Create dummy atoms at alpha sphere centers?' then
+		    continue;
+		endif
+
+		UndoSnapshot [];
+
+		local dum_chain = oCreate 0;
+		cSetHeader [dum_chain, SITE_CHAIN_HDR];
+
+		local dum_res = oCreate rep [dum_chain, length sel_site];
+		rSetName [dum_res, app token apt swrite ['{}', sel_idx]];
+
+		for i = 1, length sel_site loop
+		    local dum_actlp = sel_site(i).actlp;
+
+		    local dum_atom = oCreate rep [
+			dum_res(i), l_length sel_site(i).fpos
+		    ];
+		    aSetName [dum_atom, select ['LPA','HYD', dum_actlp]];
+		    aSetTempFactor [dum_atom, sel_site(i).frad];
+		    aSetElement [dum_atom, 'LP'];
+		    aSetNucleusLook [dum_atom, 'small-sphere'];
+		    aSetInert [dum_atom, 1];
+		    aSetRGB [dum_atom,
+			select[icolor'red',icolor'white',dum_actlp]
+		    ];
+		    aSetColorBy [dum_atom, 'rgb'];
+		    aSetPos [dum_atom, sel_site(i).fpos];
+
+		    local rsite = Residues[];
+		    rsite = rsite | (
+			indexof [oSerialNumber rsite, sel_site(i).res_serial]
+		    );
+		    oSetCollection [ twrite ['SITE{}', sel_idx(i)], rsite ];
+		endloop
+		continue;
+
+	    endif
+	elseif trig === 'list' then
+	    if val.list(2) == 2 then
+		WindowSetData [wkey, [list: last val.list(1)]];
+		val.list = [last val.list(1), 1];
+	    endif
+	endif
+
+	DisplayData [val, trig];
+    endloop
+
+    WindowDestroy wkey;
+    exit[];
+endfunction
+
+#eof

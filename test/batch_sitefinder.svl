@@ -1,0 +1,490 @@
+#svl
+//
+//	batch_sitefinder.svl	batch version of site finder
+//
+//	26-may-2014 (ah) set chain tag for dummy atoms to the receptor chain tag
+//	09-jul-2013 (nt) added site size fields
+//	20-jun-2013 (nt) added opt.res to get only pockets involving a residue
+//	05-nov-2012 (ad) updated to MOE2012
+//      20-jul-2012 (ah) prompt for files if not specified, update documentation
+//      07-jan-2008 (ad) function to split the different sites in a db
+//	21-feb-2007 (ad) created
+//
+// COPYRIGHT (C) 1998-2012 CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+//
+// PERMISSION TO USE, COPY, MODIFY AND DISTRIBUTE THIS SOFTWARE IS HEREBY
+// GRANTED PROVIDED THAT: (1) UNMODIFIED OR FUNCTIONALLY EQUIVALENT CODE
+// DERIVED FROM THIS SOFTWARE MUST CONTAIN THIS NOTICE; (2) ALL CODE DERIVED
+// FROM THIS SOFTWARE MUST ACKNOWLEDGE THE AUTHOR(S) AND INSTITUTION(S); (3)
+// THE NAMES OF THE AUTHOR(S) AND INSTITUTION(S) NOT BE USED IN ADVERTISING
+// OR PUBLICITY PERTAINING TO THE DISTRIBUTION OF THE SOFTWARE WITHOUT
+// SPECIFIC, WRITTEN PRIOR PERMISSION; (4) ALL CODE DERIVED FROM THIS SOFTWARE
+// BE EXECUTED WITH THE MOLECULAR OPERATING ENVIRONMENT (MOE) LICENSED FROM
+// CHEMICAL COMPUTING GROUP INC.
+//
+// CHEMICAL COMPUTING GROUP INC. DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+// SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS,
+// AND IN NO EVENT SHALL CHEMICAL COMPUTING GROUP INC. BE LIABLE FOR ANY
+// SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+// RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+// CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+// CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+/* 
+
+DESCRIPTION:
+
+Take a directory of protein (receptor) files (MOE, PDB, or ENT), find all 
+possbile sites, and write them to a MDB.  If the directory and output
+file are not specified, in a MOE GUI session, the user will be prompted
+to choose them.
+
+USAGE:
+
+1.  From the MOE | File | Open panel, select this file 
+    and click the "Run" button.
+2.  Alternatively save this file to 
+    $HOME/svl/run/batch_sitefinder.svl or 
+    $MOE/lib/svl/custom/run/batch_sitefinder.svl
+
+    In an SVL function, in a MOE menu file or at the SVL 
+	    command line, type a command like
+
+    run 'batch_sitefinder.svl' (which will prompt for a directory & output file)
+    run ['batch_sitefinder.svl', [dir, outmdb, opt]]
+    run ['batch_sitefinder.svl',['c:/pdbfiles', 'sites.mdb',site_minrad:2.5]]
+
+$MOE/bin/moebatch -exec "run ['batch_sitefinder.svl',['c:/pdbfiles', 'sites.mdb',site_minrad:2.5]]" -exit
+
+*/
+
+#set main batch_sitefinderdir2mdb 
+
+function AlphaSites;
+
+const ALPHASITE_DEFAULTS = [	// alpha site parameters
+    probe_radius1:	1.4,	// probe radius for LP active accessiblity
+    probe_radius2:	1.8,	// probe radius for non-LP active accessiblity
+    da_dist:		3.0,	// remove all don/acc pts not near a non-don/acc
+    connect_dist:	2.5,	// (A) connect 2 site points if close
+    site_minrad:	2.0,	// minimum max distance to mean
+    site_minsize:	3,	// min # of points in a site
+    linkage:		'msp'
+];
+
+const DEFAULTS = [
+    res:''
+];
+ 
+
+const NBR_CUT = 4.5;		// cutoff distance for neighbor determination
+
+// ContactObjects calculates which objects in the system contact the a
+// collection of spheres given by 'pos'.  We are passed the atoms to consider
+// and return a tagged vector containing
+//
+//	.chain		chain objects that contact the spheres
+//	.res		residue objects that contact the spheres
+//	.res_serial	Serial number of .res
+//	.atom		atom objects that contact the spheres (<= 4.5A)
+//	.others		atoms other than rec_atoms that contact the spheres
+
+local function ContactObjects [rec_atoms, pos]
+    local obj = [];
+
+    if l_length pos <= 0 or length rec_atoms <= 0 then
+	return obj;
+    endif
+
+    local prox = prox_open [NBR_CUT, pos, NBR_CUT];
+
+	// receptor atoms in contact
+
+    local atoms = rec_atoms | (aAtomicNumber rec_atoms >= 1);
+    obj.atom = atoms | first prox_find [prox, aPos atoms, 0];
+    obj.res = uniq oParent obj.atom;
+    obj.res_serial = oSerialNumber obj.res;
+    obj.chain = uniq oParent obj.res;
+
+	// other atoms (dummy or not) in contact
+
+    local oth = diff [Atoms[], rec_atoms];
+    obj.others = oth | first prox_find [prox, aPos oth, 0];
+
+    prox_close prox;
+
+    return obj;
+endfunction
+
+
+
+//======================= end site finder code
+
+local function load_sitefind []
+
+    const SITEFIND = [
+	'./sitefind.svl',
+	'$MOE/lib/svl/custom/run/sitefind.svl',
+	'$MOE/lib/svl/patch/run/sitefind.svl',
+	'$MOE/lib/svl/run/sitefind.svl'
+    ];
+
+    load first (SITEFIND | app ftype SITEFIND == 'file');
+
+endfunction
+
+function centroid [x, y, z]
+    return app add [x, y, z] * invz length x;
+endfunction
+
+
+function db_site2fields [mdb, sitefld, outfld]
+
+    const MOL_DATA = 1;
+    const CHAIN_DATA = 2;
+    const RES_DATA = 3;
+    const ATOM_DATA = 4;
+    mdb = db_Open mdb;
+    local ent = 0;
+    local i = 0;
+    local outflds;
+    local sitemols;
+    local resxid;
+    local masks;
+    local nents = db_nEntries mdb;
+    while ent = db_NextEntry[mdb, ent] loop
+        i = inc i;
+	write ['Processing entry {} out of {}\n', i, nents];
+	local mol = first db_ReadFields [mdb, ent, sitefld];
+	local m_site = mol(CHAIN_DATA)(MOL_CHAIN_HEADER) == 'Site Finder';
+        local mol_site = mol_cMask [mol, m_site];
+        local mol_sys = mol_cMask [mol, not m_site];
+	local nsites = mol_rCount mol_site;
+	outflds = tok_cat [outfld, '_0'];
+	local record = tag [outflds, [mol_sys]];
+	sitemols = apt mol_rMask [[mol_site], [igen nsites] == igen nsites];
+	record = tagcat [record, tag [apt tok_cat [[outfld], '_', totok x_id sitemols], sitemols]];
+	apt db_EnsureField [mdb, tags record, 'molecule'];
+	db_Write [mdb, ent, record];
+    endloop
+    db_Close mdb;
+
+endfunction
+
+function color_site_default []
+    local dum_chains = Chains[] | cHeader Chains[] == 'Site Finder';
+    local dum_atoms = cat cAtoms dum_chains;
+    local dum_actlp = aName dum_atoms == 'LPA';
+    aSetRGB [
+        dum_atoms, 
+        select [icolor'red', icolor'white', dum_actlp]
+    ];
+    aSetColorBy [dum_atoms, 'rgb'];
+endfunction
+
+
+	// flood the whole protein, pick best cluster
+	// pick cluster with minimal distance with site atoms
+	// find_alpha_site [_Atoms '$$receptor', _Atoms '$$ligand']
+function find_alpha_site [rec_atoms, site_atoms]
+
+    load_sitefind []; 
+
+    local site_atoms_centroid = oCentroid site_atoms;
+    local sites_alpha = AlphaSites [rec_atoms, []];
+
+      // get all the sites
+    local sites_alpha_pos = cat apt tagget [sites_alpha, 'fpos'];
+
+      // find all the centroids
+    local sites_alpha_centroid = app centroid sites_alpha_pos;
+
+	// find the distance between each cluster and the site atoms
+    local sites_alpha_dist = app add sqr (
+	sites_alpha_centroid - [site_atoms_centroid]
+    );
+    
+    local site_alpha_idx = x_min sites_alpha_dist;
+
+    local sel_site = sites_alpha(site_alpha_idx);
+    local dum_chain = oCreate 0;
+    cSetTag [dum_chain, cTag aChain first rec_atoms];
+    cSetHeader [dum_chain, 'Alpha Site Finder'];
+
+    local dum_res = oCreate dum_chain;
+    rSetName [dum_res, '1'];
+    
+    local dum_actlp = sel_site.actlp;
+    local dum_atom = oCreate rep [
+        dum_res, l_length sel_site.fpos
+    ];
+    aSetName [dum_atom, select ['LPA','HYD', dum_actlp]];
+    aSetElement [dum_atom, 'LP'];
+    aSetInert [dum_atom, 1];
+    aSetPos [dum_atom, sel_site.fpos];
+
+    color_site_default [];
+
+    return cat aChain first dum_atom;
+
+endfunction
+
+
+function createsites [rec, opt]
+
+    load_sitefind [];
+    local sites = AlphaSites [rec, opt];
+    local dum_res;
+    local dum_chains = oCreate 0;
+    cSetHeader [dum_chains, 'Site Finder'];
+    cSetTag [dum_chains, cTag aChain first rec];
+
+    local siteidx;
+    // loop over all found sites
+    for siteidx in x_id sites loop
+	dum_res = oCreate dum_chains;
+	rSetName [dum_res, totok siteidx ];
+	local dum_actlp = sites(siteidx).actlp;
+	local dum_atom = oCreate rep [
+	    dum_res, l_length sites(siteidx).fpos
+	];
+	aSetName [
+	    dum_atom,
+	    select ['LPA','HYD', dum_actlp]
+	];
+	aSetElement [dum_atom, 'LP'];
+	aSetInert [dum_atom, 1];
+	aSetRGB [
+	    dum_atom, 
+	    select [icolor'red', icolor'white', dum_actlp]
+	];
+	aSetGeometry [dum_atom, 'sp'];
+	aSetColorBy [dum_atom, 'rgb'];
+	aSetPos [dum_atom, sites(siteidx).fpos];
+    endloop
+
+    return [dum_chains, sites];
+endfunction
+
+
+const UIDFLD = 'siteuid_';
+const RESFLD = 'siteres_';
+const HYDFLD = 'sitehyd_';
+const PLBFLD = 'siteplb_';
+const SIZEFLD = 'sitesize_';
+const SIDEFLD = 'siteside_';
+
+function _Atoms;
+function db_ReorderFields;
+
+local function Hydrophobe atoms =		// hydrophobic atom test
+    sm_Match [ '[#6!$(*~[#X])]', atoms ]
+;
+
+function batch_sitefinder2mdb [files, outmdb, opt]
+
+    if MOE_BATCH and anytrue app isnull [files,outmdb] then
+	exit 'Usage: batch_sitefinder2mdb [files, outmdb, opt]';
+    endif
+
+    Close[];
+
+    local file;
+    local dum_chain, dum_res, dum_atms;
+    local objs, objsres, objsatoms, objsresuid, objsresname;
+    local rec_chains, rec_atms;
+    local record;
+    local sites;
+
+    local molfld = 'mol';
+
+    if isnull outmdb then
+	outmdb = FilePrompt[title:'Select an output database', mode:'saveAs'];
+    endif
+    if isnull outmdb then exit[];endif
+
+    outmdb = db_Open [outmdb, 'create'];
+
+    for file in files loop
+
+	if not (ftype file === 'file') then
+	    exit tok_cat ['File ', file, ' does not exist'];
+	endif
+
+	rec_chains = ReadAuto file;
+
+	rec_atms = _Atoms '$$receptor'; // might want to replace this
+	[dum_chain, sites] = createsites [rec_atms, opt];
+	dum_res = first cResidues dum_chain;
+	dum_atms = rAtoms dum_res;
+
+	objs = apt ContactObjects [[rec_atms], app aPos dum_atms];
+	objsres = app cat apt tagget [objs, 'res'];
+	objsatoms = app cat apt tagget [objs, 'atom'];
+	objsresuid = rUID objsres;
+	objsresname = apt tok_cat [tolower rName objsres, totok objsresuid];
+
+	if opt.res <> '' then
+	    local m = app anytrue apt m_join [objsresname, opt.res];
+	    objsres = objsres | m;
+	    objsresuid = objsresuid | m;
+	    objsresname = objsresname | m;
+	    sites = sites | m;
+	endif
+	
+	local uidflds = tok_cat [UIDFLD, totok x_id objsres];
+	local resflds = tok_cat [RESFLD, totok x_id objsres];
+	local hydflds = tok_cat [HYDFLD, totok x_id objsres];
+	local plbflds = tok_cat [PLBFLD, totok x_id objsres];
+	local sizeflds = tok_cat [SIZEFLD, totok x_id objsres];
+//	local sideflds = tok_cat [SIDEFLD, totok x_id objsres];
+	
+	db_EnsureField [outmdb, molfld, 'molecule'];
+	apt db_EnsureField [outmdb, uidflds, 'int'];
+	apt db_EnsureField [outmdb, resflds, 'char'];
+	apt db_EnsureField [outmdb, hydflds, 'int'];
+	apt db_EnsureField [outmdb, plbflds, 'float'];
+	apt db_EnsureField [outmdb, sizeflds, 'int'];
+//	apt db_EnsureField [outmdb, sideflds, 'int'];
+
+	record = tag [molfld, [mol_Extract cat [rec_chains, dum_chain]]];
+	record = cat [record, tag [uidflds, objsresuid]];
+	record = cat [record, tag [resflds, apt swrite ['{}', objsresname]]];
+	record = cat [record, tag [hydflds, app iadd app notnot app Hydrophobe objsatoms]];
+	record = cat [record, tag [plbflds, apt tagget [sites, 'plb']]];
+	record = cat [record, tag [sizeflds, app length cat apt tagget [sites, 'label']]];
+//	record = cat [record, tag [sideflds, app add not aBackbone objsatoms]];
+	db_Write[outmdb, 0, record];
+	oDestroy cat [rec_chains, dum_chain];
+    endloop
+
+
+    local [fieldnames, fieldtypes] = db_Fields outmdb;
+    db_ReorderFields [
+        outmdb, 
+        cat [
+	    molfld,
+	    findmatch [tok_cat [UIDFLD, '*'], fieldnames],
+	    findmatch [tok_cat [RESFLD, '*'], fieldnames],
+	    findmatch [tok_cat [HYDFLD, '*'], fieldnames],
+	    findmatch [tok_cat [PLBFLD, '*'], fieldnames],
+//	    findmatch [tok_cat [SIDEFLD, '*'], fieldnames],
+	    findmatch [tok_cat [SIZEFLD, '*'], fieldnames]
+	],
+	x_id fieldnames];
+
+    if opt.res == '' then
+	db_site2fields [outmdb, molfld, 'site'];
+    endif
+    db_Close outmdb;
+
+endfunction
+
+const VALIDEXT = ['moe', 'pdb', 'ent'];
+function batch_sitefinderdir2mdb [dir, outmdb, opt]
+    if MOE_BATCH and anytrue app isnull [dir,outmdb] then
+	exit 'Usage: batch_sitefinderdir2mdb [dir, outmdb, opt]';
+    endif
+    if not (ftype dir === 'dir') then 
+	dir = FilePrompt [title:'Select an input directory', mode:'dir'];
+    endif   
+    local exts = apt tok_cat ['*.', VALIDEXT];
+    exts = cat [exts, toupper exts];
+    local files = uniq cat apt flist [dir, exts];
+    if isnull files then exit 'No files found'; endif
+    opt = tagcat [opt, DEFAULTS];
+    batch_sitefinder2mdb [files, outmdb, opt];
+endfunction
+
+
+// take first molecule field
+// generate all sites in a second field
+function db_sitefinder [outmdb, infld, sitefld, opt]
+
+    local mdb;
+
+    if isnull mdb then
+	mdb = dbv_DefaultView[];
+    else
+	mdb = db_Open [mdb, 'read-write'];
+    endif
+
+    if isnull infld then infld = db_FirstFieldType [mdb, 'molecule'];endif
+    if isnull sitefld then sitefld = tok_cat [infld, '_sites'];endif
+
+    db_EnsureField [mdb, sitefld, 'molecule'];
+    local nents = db_nEntries mdb;
+    local ent = 0;
+    local i = 0;
+    while ent = db_NextEntry[mdb, ent] loop
+        i = inc i;
+	write ['Processing entry {} out of {}\n', i, nents];
+	local mol = first db_ReadFields [mdb, ent, infld];
+	local chains = mol_Create mol;
+	local [dum_chain, sites] = createsites [cat cAtoms chains, opt];
+	db_Write[mdb, ent, tag[sitefld, [mol_Extract dum_chain]]];
+	oDestroy chains;
+	oDestroy dum_chain;
+    endloop
+    db_Close mdb;
+endfunction
+
+local function dist [pos1, pos2]
+    local distance = sqrt add sqr (pos1 - pos2);
+    return distance;
+endfunction
+
+function db_compare_lig [mdb, ligfld, sitefld]
+    mdb = db_Open mdb;
+    local recmol, ligmol, sitemol; 
+
+    local idx = 0;
+    local ent = 0;
+    local results = [];
+    while ent = db_NextEntry [mdb, ent] loop
+        idx = inc idx;
+	[ligmol, sitemol] = db_ReadFields [mdb, ent, [ligfld, sitefld]];
+	local ligchains = mol_Create ligmol;
+	local sitechains = mol_Create sitemol;
+	local ligcentroid = oCentroid ligchains;
+	local sitecentroids = cat app oCentroid cResidues sitechains;
+	local site_idx = x_min apt dist [[ligcentroid], sitecentroids];
+
+	results(site_idx) = cat [results(site_idx), idx];
+	oDestroy [ligchains, sitechains];
+    endloop
+    return results;
+endfunction
+
+/*
+function moldist [mol1, mol2]
+    local mol1cent = centroid [
+        mol1(4)(MOL_ATOM_X),
+        mol1(4)(MOL_ATOM_Y),
+        mol1(4)(MOL_ATOM_Z)
+    ];
+    local mol2cent = centroid [
+        mol2(4)(MOL_ATOM_X),
+        mol2(4)(MOL_ATOM_Y),
+        mol2(4)(MOL_ATOM_Z)
+    ];
+    return sqrt add sqr (mol2cent - mol1cent);
+endfunction
+
+function db_associate_ligand [mdb, ligfld, sitefldpref]
+
+    local [fieldnames, fieldtypes] = db_Fields mdb;
+    local siteflds = findmatch [tok_cat[sitefldpref, '*'], fieldnames];
+    local ent = 0;
+    local idx = 0;
+    while ent = db_NextEntry [mdb, ent] loop
+        idx = inc idx;
+	local record = db_Read [mdb, ent];
+	local ligmol = data.(ligfld);
+	local sitemols = apt tagget [data, siteflds];
+	sitemols = sitemols | not isnull sitemols;
+	local site_idx = (x_id length siteflds | not isnull sitemols)(x_min apt moldist [sitemols, [ligmol]]);
+	siteligmol = mol_Cat [sitemols(site_idx), ligmol];
+    endloop
+endfunction
+*/
