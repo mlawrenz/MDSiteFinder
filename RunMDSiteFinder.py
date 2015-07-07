@@ -2,7 +2,7 @@ import Site3D
 import mdtraj
 import optparse
 import pylab
-from numpy import * 
+import numpy
 import glob
 import os
 import sys
@@ -30,11 +30,9 @@ is aligned to the reference structure.
 
 """
 
-#def main(modeldir, genfile, ligandfile, proteinfile, topology, writefree=False):
-def main(pocketfile, trajfile, topo):
+def main(pocketfile, trajfile, topo, outname):
     # load traj
     dir=os.path.dirname(trajfile)
-    filename=trajfile.split('%s/' % dir)[1].split('.')[0]
     traj=mdtraj.load(trajfile, top=topo)
     newcoors=10*traj.xyz
     total_frames=newcoors.shape[0]
@@ -47,12 +45,15 @@ def main(pocketfile, trajfile, topo):
     print "getting tally"
     tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
     freq=tally/total_frames
+    freq=numpy.round(freq, decimals=1) 
     print freq.min(), freq.max()
-    space.write_dx(freq, dir, filename)
+    space.write_dx(freq, dir, outname)
 
 
 def parse_commandline():
     parser = optparse.OptionParser()
+    parser.add_option('-o', '--outname', dest='outname',
+                      help='output dx name')
     parser.add_option('-y', '--topo', dest='topo',
                       help='topology')
     parser.add_option('-t', '--trajfile', dest='trajfile',
@@ -67,6 +68,5 @@ def parse_commandline():
 if __name__ == "__main__":
     (options, args) = parse_commandline()
     #if options.writefree==True:
-    main(pocketfile=options.pocketfile, trajfile=options.trajfile, topo=options.topo)
-
+    main(pocketfile=options.pocketfile, trajfile=options.trajfile, topo=options.topo, outname=options.outname)
 

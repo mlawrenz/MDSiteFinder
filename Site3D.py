@@ -134,14 +134,13 @@ class Site3D:
         # all coor is all protein coors
         X,Y,Z=meshgrid(self.xaxis, self.yaxis, self.zaxis)
         pocketcoors=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
-
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         for frame in xrange(len(reduced_coor.keys())):
             frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
             for sphere in sorted(pocketdata.keys()):
                 center=array(pocketdata[sphere]['center'])
                 distance=sp.distance.cdist(reduced_coor[frame], center.reshape(1,-1)).ravel() # find within radius
-                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']]
+                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']+3]
                 # all points in sphere are proteins entered into the sphere
                 # give a 0 for all these points in the sphere
                 for (i,j,k) in points_in_sphere:
