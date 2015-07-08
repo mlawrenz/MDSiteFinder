@@ -47,8 +47,7 @@ def pocket_sphere_coors(radius, center, resolution):
     return sphere_cart_coors     
             
 
-def parse_pocket_file(pocket_file):
-    resolution=0.5
+def parse_pocket_file(pocket_file, resolution=0.5):
     pocket_data=dict()
     fhandle=open(pocket_file)
     n=0
@@ -66,8 +65,9 @@ def parse_pocket_file(pocket_file):
         ycoor=float(line[38:45])
         zcoor=float(line[46:53])
         # official
-        occupancy=line[58:61]
-        beta=line[60:65]
+        occupancy=line[56:61]
+        beta=line[62:67]
+        print "sphere %s radius %s" % (n, beta)
         # may want this flex
         #occupancy=line[67:70]
         #beta=line[54:59]
@@ -129,20 +129,17 @@ class Site3D:
         self.zaxis = array(zaxis)
         self.tol=self.dx/2.0
  
-    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor):
+    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, pad):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
-        X,Y,Z=meshgrid(self.xaxis, self.yaxis, self.zaxis)
-        pocketcoors=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         for frame in xrange(len(reduced_coor.keys())):
             frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
             for sphere in sorted(pocketdata.keys()):
                 center=array(pocketdata[sphere]['center'])
                 distance=sp.distance.cdist(reduced_coor[frame], center.reshape(1,-1)).ravel() # find within radius
-                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']+3]
-                # all points in sphere are proteins entered into the sphere
-                # give a 0 for all these points in the sphere
+                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']+pad]
+                # give a 0 for when a protein from reduced coor is in sphere
                 for (i,j,k) in points_in_sphere:
                     x_location=where((self.xaxis>=i)&(self.xaxis< i+self.dx))[0]
                     y_location=where((self.yaxis>=j)&(self.yaxis< j+self.dy))[0]

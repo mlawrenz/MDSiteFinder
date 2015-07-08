@@ -32,18 +32,20 @@ is aligned to the reference structure.
 
 def main(pocketfile, trajfile, topo, outname):
     # load traj
+    resolution=1
+    pad=5.0
     dir=os.path.dirname(trajfile)
     traj=mdtraj.load(trajfile, top=topo)
     newcoors=10*traj.xyz
     total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
-    pocket_data=Site3D.parse_pocket_file(pocketfile)
+    pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
     print "getting min max"
-    reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors)
-    space=Site3D.Site3D(xaxis=x_range, yaxis=y_range, zaxis=z_range)
-    #get frew
+    reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
+    space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
+    #get freq
     print "getting tally"
-    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
+    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors, pad=pad)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
     print freq.min(), freq.max()
