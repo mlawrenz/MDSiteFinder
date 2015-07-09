@@ -145,6 +145,7 @@ class Site3D:
             if occupied[0].size:
                 for index in occupied[0]:
                     coor=self.pocketgrid[index]
+                    testarray=array([38.0, 47.5, 25.0])
                     i=where(self.xaxis==coor[0])[0]
                     j=where(self.yaxis==coor[1])[0]
                     k=where(self.zaxis==coor[2])[0]
@@ -160,16 +161,18 @@ class Site3D:
         resname='DUM'
         occupancy=0.00
         beta=0.00
+        testarray=array([38.0, 47.5, 25.0])
         ohandle=open('%s/pocketgrid_open%0.1f.pdb' % (dir, frequency), 'w')
         for i in xrange(len(self.xaxis)):    
             for j in xrange(len(self.yaxis)):    
                 for k in xrange(len(self.zaxis)):    
+                    #if i==18 and j==19 and k==4:
                     if matrix[i,j,k]==frequency:
-                        xcoor=self.pocketgrid[count][0]
-                        ycoor=self.pocketgrid[count][1]
-                        zcoor=self.pocketgrid[count][2]
+                        xcoor=self.xaxis[i]
+                        ycoor=self.yaxis[j]
+                        zcoor=self.zaxis[k]
                         atomnum=count+1
-                        line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} '.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+                        line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
                         ohandle.write(line)
                         count+=1
                     else:
