@@ -128,23 +128,23 @@ class Site3D:
         self.yaxis = array(yaxis)
         self.zaxis = array(zaxis)
         self.tol=self.dx/2.0
+        X,Y,Z=meshgrid(self.xaxis,self.yaxis,self.zaxis)
+        self.pocketgrid=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
 
  
     def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, cutoff=1.4, pad=None):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
-        X,Y,Z=meshgrid(self.xaxis,self.yaxis,self.zaxis)
-        pocketgrid=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         # loop over all grid points
         for frame in xrange(len(reduced_coor.keys())):
             frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-            distances=sp.distance.cdist(pocketgrid, reduced_coor[frame])
+            distances=sp.distance.cdist(self.pocketgrid, reduced_coor[frame])
             # array of gridpoint index, protein coor
             occupied=where(distances< cutoff)
             if occupied[0].size:
                 for index in occupied[0]:
-                    coor=pocketgrid[index]
+                    coor=self.pocketgrid[index]
                     i=where(self.xaxis==coor[0])[0]
                     j=where(self.yaxis==coor[1])[0]
                     k=where(self.zaxis==coor[2])[0]
@@ -152,6 +152,30 @@ class Site3D:
             pocketoccup+=frameoccup
         return pocketoccup
 
+
+    def write_pdb(self, dir, matrix, frequency):
+        count=0
+        atomname='DUM'
+        resid=1
+        resname='DUM'
+        occupancy=0.00
+        beta=0.00
+        ohandle=open('%s/pocketgrid_open%0.1f.pdb' % (dir, frequency), 'w')
+        for i in xrange(len(self.xaxis)):    
+            for j in xrange(len(self.yaxis)):    
+                for k in xrange(len(self.zaxis)):    
+                    if matrix[i,j,k]==frequency:
+                        xcoor=self.pocketgrid[count][0]
+                        ycoor=self.pocketgrid[count][1]
+                        zcoor=self.pocketgrid[count][2]
+                        atomnum=count+1
+                        line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} '.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+                        ohandle.write(line)
+                        count+=1
+                    else:
+                        count+=1
+        ohandle.close()
+        return
 
     def write_dx(self, GD, dir, filename):
         newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
