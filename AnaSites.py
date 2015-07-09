@@ -1,4 +1,5 @@
 import numpy, pylab
+import ClusterTanimotoMatrix as ct
 import optparse
 
 
@@ -65,27 +66,35 @@ def plot_pocket_props(data, num_pockets, reorder=False):
             pylab.title(key)
     pylab.show()
 
-def get_residue_similarity(data, ind):
-    similarity=numpy.zeros(len(data))
-    for (n, site) in enumerate(data):
-        overlap=numpy.intersect1d(data[ind][numpy.where(data[ind]!=-1)], site[numpy.where(site!=-1)])
-        similarity[n]=float(len(overlap))/len(data[ind][numpy.where(data[ind]!=-1)])
-    return similarity
+def get_residue_similarity(data1, data2):
+    frames=numpy.where(data1!=-1)[0]
+    if not frames.size:
+        sim=-1
+    else:
+        overlap=numpy.intersect1d(data1[numpy.where(data1!=-1)], data2[numpy.where(data2!=-1)])
+        sim=float(len(overlap))/len(data1[numpy.where(data1!=-1)])
+    return sim
 
-def Cluster(residue_data, cutoff=0.8, Seed=0):
-    """Feed in Data with indices already selected"""
-    GeneratorIndices=[Seed]
-    n0,n1=residue_data.shape
-    List=numpy.ones(n0)*numpy.inf
-    for k in xrange(100000-1):
-        print("Finding Generator %d"%(k+1))
-        NewList=get_residue_similarity(residue_data, GeneratorIndices[k])
-        List[numpy.where(NewList<List)]=NewList[numpy.where(NewList<List)]
-        NewInd=numpy.argmax(List)
-        if List[NewInd] < cutoff:
-            break #  The current generators are good enough; do not add another one.
-        GeneratorIndices.append(NewInd)
-    return GeneratorIndices
+def get_site_similarity(data, numframes, num_pockets):
+    residue_sites=[]
+    count=0
+    map_sites=dict()
+    for frame in xrange(numframes):
+        for site in range(1, num_pockets):
+            key='siteuid_%s' % site
+            if data[key][frame]!=None:
+                res=[int(i) for i in data[key][frame].split()]
+                residue_sites.append(numpy.array(res))
+                map_sites[count]=(frame, site)
+                count+=1
+            else:
+                pass
+    similarity_matrix=-1*numpy.ones((len(residue_sites), len(residue_sites)))
+    for i in xrange(len(residue_sites)):
+        for j in xrange(len(residue_sites)):
+            sim=get_residue_similarity(residue_sites[i], residue_sites[j])
+            similarity_matrix[i,j]=sim
+    return residue_sites, similarity_matrix, map_sites    
 
 def main(input, reorder=False):
     #if frames are not ordered properly in mdb file (546 after 5455, etc)
@@ -123,22 +132,27 @@ def main(input, reorder=False):
                     column+=1
     key_types, num_pockets, max_num_residues=get_key_types(data)
     data=make_numpy_array(data, key_types)
+    numframes=10
+    residue_sites, similarity_matrix, map_sites=get_site_similarity(data, numframes, num_pockets)
     import pdb
     pdb.set_trace()
-    residue_sites=-1*numpy.ones((numframes*num_pockets, max_num_residues))
-    count=0
+    cutoff=0.8
+    gens, assignments, distances=ct.cluster(similarity_matrix, distance_cutoff=cutoff, cluster_cutoff=None)
+    # assignments link to residue site list, which is linked to binding site
+    # number for a certain frame
+    #####
+    # goal is to rename the sites according to their cluster, so site3 in frame
+    # 1000 may become site 1
+    # is this right??
+    for (n, site) in enumerate(assignments):
+        (orig_frame, orig_site)=map_sites[n]
+        (new_frame, new_site)=map_sites[site]
+        data[key][frame]=
+
     for frame in xrange(numframes):
         for site in range(1, num_pockets):
             key='siteuid_%s' % site
-            res=[]
             if data[key][frame]!=None:
-                res=[int(i) for i in data[key][frame].split()]
-                residue_sites[count][0:len(res)]=numpy.array(res)
-                count+=1
-            else:
-                count+=1
-    gens=Cluster(residue_sites)
-
     #plot_pocket_props(data, num_pockets)
 
 

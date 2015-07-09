@@ -48,6 +48,7 @@ def main(pocketfile, trajfile, topo, outname):
     tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors, pad=pad)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
+    #freq=abs(freq-1)
     print freq.min(), freq.max()
     space.write_dx(freq, dir, outname)
 
