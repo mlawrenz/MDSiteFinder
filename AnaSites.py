@@ -67,10 +67,10 @@ def plot_pocket_props(data, num_pockets, reorder=False):
 
 def get_residue_similarity(data, ind):
     similarity=numpy.zeros(len(data))
-    for site in data:
-        overlap=numpy.intersect1d(data[ind], site)
-        similarity[n]=len(overlap)/len(data[ind])
-    return similarity_scores
+    for (n, site) in enumerate(data):
+        overlap=numpy.intersect1d(data[ind][numpy.where(data[ind]!=-1)], site[numpy.where(site!=-1)])
+        similarity[n]=float(len(overlap))/len(data[ind][numpy.where(data[ind]!=-1)])
+    return similarity
 
 def Cluster(residue_data, cutoff=0.8, Seed=0):
     """Feed in Data with indices already selected"""
@@ -81,7 +81,7 @@ def Cluster(residue_data, cutoff=0.8, Seed=0):
         print("Finding Generator %d"%(k+1))
         NewList=get_residue_similarity(residue_data, GeneratorIndices[k])
         List[numpy.where(NewList<List)]=NewList[numpy.where(NewList<List)]
-        NewInd=np.argmax(List)
+        NewInd=numpy.argmax(List)
         if List[NewInd] < cutoff:
             break #  The current generators are good enough; do not add another one.
         GeneratorIndices.append(NewInd)
