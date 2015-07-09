@@ -128,23 +128,37 @@ class Site3D:
         self.yaxis = array(yaxis)
         self.zaxis = array(zaxis)
         self.tol=self.dx/2.0
+
+#
+#                    for frame in xrange(len(reduced_coor.keys())):
+#                        frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+#                        for sphere in sorted(pocketdata.keys()):
+#                            center=array(pocketdata[sphere]['center'])
+#                            distance=sp.distance.cdist(reduced_coor[frame], center.reshape(1,-1)).ravel() # find within radius
+#                            points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']+pad]
+#                            # give a 0 for when a protein from reduced coor is in sphere
+#                            for (i,j,k) in points_in_sphere:
+#                                x_location=where((self.xaxis>=i)&(self.xaxis< i+self.dx))[0]
+#                                y_location=where((self.yaxis>=j)&(self.yaxis< j+self.dy))[0]
+#                                z_location=where((self.zaxis>=k)&(self.zaxis< k+self.dz))[0]
+#                                frameoccup[x_location, y_location, z_location]=0
  
-    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, pad):
+    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, cutoff=1.4, pad=None):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+        frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+        # loop over all grid points
         for frame in xrange(len(reduced_coor.keys())):
             frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-            for sphere in sorted(pocketdata.keys()):
-                center=array(pocketdata[sphere]['center'])
-                distance=sp.distance.cdist(reduced_coor[frame], center.reshape(1,-1)).ravel() # find within radius
-                points_in_sphere=reduced_coor[frame][distance < pocketdata[sphere]['radius']+pad]
-                # give a 0 for when a protein from reduced coor is in sphere
-                for (i,j,k) in points_in_sphere:
-                    x_location=where((self.xaxis>=i)&(self.xaxis< i+self.dx))[0]
-                    y_location=where((self.yaxis>=j)&(self.yaxis< j+self.dy))[0]
-                    z_location=where((self.zaxis>=k)&(self.zaxis< k+self.dz))[0]
-                    frameoccup[x_location, y_location, z_location]=0
+            for (i, x) in enumerate(self.xaxis):
+                for (j, y) in enumerate(self.yaxis):
+                    for (k, z) in enumerate(self.zaxis):
+                        gridpoint=array([x,y,z])
+                        distance=sp.distance.cdist(reduced_coor[frame], gridpoint.reshape(1,-1)).ravel() # find within radius
+                        occupied=reduced_coor[frame][distance < cutoff]
+                        if occupied.size:
+                            frameoccup[i,j,k]=0
             pocketoccup+=frameoccup
         return pocketoccup
 

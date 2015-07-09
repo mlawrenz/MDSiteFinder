@@ -32,7 +32,7 @@ is aligned to the reference structure.
 
 def main(pocketfile, trajfile, topo, outname):
     # load traj
-    resolution=1
+    resolution=0.5
     pad=5.0
     dir=os.path.dirname(trajfile)
     traj=mdtraj.load(trajfile, top=topo)
@@ -45,10 +45,10 @@ def main(pocketfile, trajfile, topo, outname):
     space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
     #get freq
     print "getting tally"
-    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors, pad=pad)
+    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
-    #freq=abs(freq-1)
+    frames=numpy.where(freq!=1)[0]
     print freq.min(), freq.max()
     space.write_dx(freq, dir, outname)
 
