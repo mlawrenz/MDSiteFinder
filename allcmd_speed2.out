@@ -1,0 +1,21 @@
+REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)
+sphere 0 radius 0.84 
+sphere 1 radius 1.94 
+sphere 2 radius 0.97 
+sphere 3 radius 0.86 
+sphere 4 radius 1.54 
+sphere 5 radius 1.28 
+sphere 6 radius 1.03 
+sphere 7 radius 1.56 
+sphere 8 radius 1.32 
+sphere 9 radius 0.33 
+sphere 10 radius 1.04 
+sphere 11 radius 1.35 
+sphere 12 radius 1.18 
+sphere 13 radius 1.36 
+sphere 14 radius 1.58 
+getting min max
+pocket box volume 6498 angstroms^3
+getting tally
+tallied all frames and gridpoint 6035.3883 sec
+0.0 1.0

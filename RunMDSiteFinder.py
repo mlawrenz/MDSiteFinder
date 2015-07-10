@@ -31,12 +31,13 @@ is aligned to the reference structure.
 
 """
 
-def main(pocketfile, trajfile, topo, outname):
+def main(pocketfile, trajfile, topo, outname, writedx=True):
     # load traj
     resolution=0.5
     pad=7.0
     dir=os.path.dirname(trajfile)
     print "REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)"
+    # check if you already ran the calc, load framelog if so
     traj=mdtraj.load(trajfile, top=topo)
     indices=[]
     for i in traj.topology.atoms:
@@ -48,30 +49,28 @@ def main(pocketfile, trajfile, topo, outname):
     pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
     print "getting min max"
     reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
-    space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
+    space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
     #get freq
     print "getting tally"
     start=float(time.time())
-    space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    framelog=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
-    #need to reshape space.pocketoccup j,i,k due to ravel
-    freq=numpy.zeros((len(space.xaxis), len(space.yaxis), len(space.zaxis)))
-    count=0
-    for j in range(0, len(space.yaxis)):
-        for i in range(0, len(space.zaxis)):
-            for k in range(0, len(space.zaxis)):
-                freq[i,j,k]=space.pocketoccup[count]/total_frames
-                count+=1
+    start=float(time.time())
+    numpy.savetxt('%s/%s_framelog_matrix.dat' % (dir, outname), framelog)
+    end=float(time.time())
+    elapse=end-start
+    print "saved frametally %0.4f sec" % elapse
+    # work with gridpoints directly if only writing PDBs
+    freq=space.pocketoccup/total_frames
     freq=numpy.round(freq, decimals=1) 
     for f in numpy.arange(0, 1.1, 0.1):
-        frame=numpy.where(freq==f)[0]
-        if frame.size:
-            space.write_pdb(dir, outname, freq,f)
-    frames=numpy.where(freq!=1)[0]
-    print freq.min(), freq.max()
-    space.write_dx(freq, dir, outname)
+        frames=numpy.where(freq==f)[0]
+        if frames.size:
+            space.write_pdb(dir, outname, frames, f)
+    if writedx==True:
+        space.write_dx(dir, outname)
 
 
 def parse_commandline():

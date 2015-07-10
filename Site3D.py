@@ -122,7 +122,8 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
 
 # Class for 3D Grid
 class Site3D:
-    def __init__(self, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, reduced_coors=None):
+    def __init__(self, total_frames, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, reduced_coors=None):
+        self.total_frames=total_frames
         self.pops=pops
         self.dx =resolution
         self.dy =resolution
@@ -143,6 +144,8 @@ class Site3D:
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
         # loop over all grid points
+        # save frameoccupancies
+        init=0
         for frame in xrange(len(self.reduced_coors.keys())):
             frameoccup=numpy.ones((self.pocketgrid.shape[0]))
             distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
@@ -152,86 +155,79 @@ class Site3D:
             occupied=numpy.where(distances< cutoff)
             unique_occupied=numpy.unique(occupied[0]) 
             frameoccup[unique_occupied]=0
+            self.pocketoccup+=frameoccup
+            if init==0:
+                framelog=frameoccup
+                init+=1
+            else:
+                framelog=numpy.vstack((framelog, frameoccup))
             # turn off check solvated search, can do visualization post
             # processing
             #check_solvated=numpy.where(distances<5.0)
             #ref=numpy.arange(0, distances.shape[0])
             #solvated_inds=numpy.setdiff1d(ref, check_solvated[0]) 
             #frameoccup[solvated_inds]=0
-            self.pocketoccup+=frameoccup
-        return
+        return framelog
 
 
-    def write_pdb(self, dir, outname, matrix, frequency):
+    def write_pdb(self, dir, outname, frequency_indices, freq_val):
         count=0
         atomname='DUM'
         resid=1
         resname='DUM'
         occupancy=0.00
         beta=0.00
-        ohandle=open('%s/%s_open%0.1f.pdb' % (dir, outname, frequency), 'w')
-        for i in xrange(len(self.xaxis)):    
-            for j in xrange(len(self.yaxis)):    
-                for k in xrange(len(self.zaxis)):    
-                    if matrix[i,j,k]==frequency:
-                        xcoor=self.xaxis[i]
-                        ycoor=self.yaxis[j]
-                        zcoor=self.zaxis[k]
-                        atomnum=count+1
-                        line=format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
-                        ohandle.write(line)
-                        count+=1
-                    else:
-                        count+=1
+        ohandle=open('%s/%s_open%0.1f.pdb' % (dir, outname, freq_val), 'w')
+        for index in frequency_indices:
+            xcoor=self.pocketgrid[index][0]
+            ycoor=self.pocketgrid[index][1]
+            zcoor=self.pocketgrid[index][2]
+            atomnum=count+1
+            resid=count+1
+            line=format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+            ohandle.write(line)
+            count+=1
         ohandle.close()
         return
 
-    def write_dx(self, GD, dir, filename):
+    def write_dx(self, dir, filename):
+        # reshape freq due to ravel in order to format for OpenDX
+        reshape_freq=numpy.zeros((len(self.xaxis), len(self.yaxis),len(self.zaxis)))
+        count=0
+        for j in range(0, len(self.yaxis)):
+            for i in range(0, len(self.zaxis)):
+                for k in range(0, len(self.zaxis)):
+                    reshape_freq[i,j,k]=self.pocketoccup[count]/self.total_frames
+                    count+=1
         newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
         newfile.write('# Data calculated Pocket open frequency\n')
-        newfile.write('object 1 class gridpositions counts %s %s %s\n' % (GD.shape[0], GD.shape[1], GD.shape[2]))
+        newfile.write('object 1 class gridpositions counts %s %s %s\n' % (reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
         newfile.write('origin %s %s %s\n' % (self.xaxis[0], self.yaxis[0], self.zaxis[0]))
         newfile.write('delta %s 0 0\n' % self.dx)
         newfile.write('delta 0 %s 0\n' % self.dy)
         newfile.write('delta 0 0 %s\n' % self.dz)
-        newfile.write('object 2 class gridconnections counts %s %s %s\n' % (GD.shape[0], GD.shape[1], GD.shape[2]))
-        newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (GD.shape[0]*GD.shape[1]*GD.shape[2]))
-        intergrid=numpy.zeros((GD.shape[0], GD.shape[1], GD.shape[2]))
+        newfile.write('object 2 class gridconnections counts %s %s %s\n' % (reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
+        newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (reshape_freq.shape[0]*reshape_freq.shape[1]*reshape_freq.shape[2]))
+        intergrid=numpy.zeros((reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
         count=0
-        for i in range(0, GD.shape[0]):
-            for j in range(0, GD.shape[1]):
-                for k in range(0, GD.shape[2]):
+        for i in range(0, reshape_freq.shape[0]):
+            for j in range(0, reshape_freq.shape[1]):
+                for k in range(0, reshape_freq.shape[2]):
                     if count==2:
-                        if GD[i][j][k]==0:
-                            newfile.write('%s\n' % int(GD[i][j][k]))
+                        if reshape_freq[i][j][k]==0:
+                            newfile.write('%s\n' % int(reshape_freq[i][j][k]))
                         else:
-                            newfile.write('%s\n' % GD[i][j][k])
+                            newfile.write('%s\n' % reshape_freq[i][j][k])
                         count=0
                     else:
-                        if GD[i][j][k]==0:
-                            newfile.write('%s\t' % int(GD[i][j][k]))
+                        if reshape_freq[i][j][k]==0:
+                            newfile.write('%s\t' % int(reshape_freq[i][j][k]))
                         else:
-                            newfile.write('%s\t' % GD[i][j][k])
+                            newfile.write('%s\t' % reshape_freq[i][j][k])
                         count+=1
         newfile.write('\nobject "ligand free energy" class field')
         newfile.close()
 
-    def pmfvolume(self, GD):
-        sum=0
-        oldx=self.xaxis[0]
-        oldval=0
-        for i in range(0, len(self.xaxis)):
-            oldy=self.yaxis[0]
-            for j in range(0, len(self.yaxis)):
-                oldz=self.zaxis[0]
-                for k in range(0, len(self.zaxis)):
-                    if abs(self.zaxis[k]-oldz) !=0:
-                        if GD[i,j, k] != 0:
-                            sum+=GD[i,j, k]*abs(self.xaxis[i]-oldx)*abs(self.yaxis[j]-oldy)*abs(self.zaxis[k]-oldz)
-                    oldz=self.zaxis[k]
-                oldy=self.yaxis[j]
-            oldx=self.xaxis[i]
-        return float(sum)
  
 
 
