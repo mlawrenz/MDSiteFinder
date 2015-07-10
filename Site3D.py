@@ -132,7 +132,7 @@ class Site3D:
         self.pocketgrid=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
 
  
-    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, cutoff=2.8, pad=None):
+    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, cutoff=3.0, pad=None):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
@@ -142,9 +142,6 @@ class Site3D:
             distances=sp.distance.cdist(self.pocketgrid, reduced_coor[frame])
             # array of gridpoint index, protein coor
             occupied=where(distances< cutoff)
-            testarray=array([33.5, 40.0, 26.0])
-            import pdb
-            pdb.set_trace()
             if occupied[0].size:
                 for index in occupied[0]:
                     coor=self.pocketgrid[index]
@@ -163,7 +160,6 @@ class Site3D:
         resname='DUM'
         occupancy=0.00
         beta=0.00
-        testarray=array([38.0, 47.5, 25.0])
         ohandle=open('%s/%s_open%0.1f.pdb' % (dir, outname, frequency), 'w')
         for i in xrange(len(self.xaxis)):    
             for j in xrange(len(self.yaxis)):    

@@ -35,8 +35,13 @@ def main(pocketfile, trajfile, topo, outname):
     resolution=0.5
     pad=7.0
     dir=os.path.dirname(trajfile)
+    print "REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)"
     traj=mdtraj.load(trajfile, top=topo)
-    newcoors=10*traj.xyz
+    indices=[]
+    for i in traj.topology.atoms:
+        if 'H' not in i.name:
+            indices.append(i.index)
+    newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
     total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
     pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
@@ -45,7 +50,7 @@ def main(pocketfile, trajfile, topo, outname):
     space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
     #get freq
     print "getting tally"
-    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
+    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors, cutoff=3.0)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
     for f in numpy.arange(0, 1.1, 0.1):
@@ -76,4 +81,5 @@ if __name__ == "__main__":
     (options, args) = parse_commandline()
     #if options.writefree==True:
     main(pocketfile=options.pocketfile, trajfile=options.trajfile, topo=options.topo, outname=options.outname)
+
 
