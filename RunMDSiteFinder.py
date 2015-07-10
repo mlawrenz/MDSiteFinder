@@ -47,10 +47,10 @@ def main(pocketfile, trajfile, topo, outname):
     pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
     print "getting min max"
     reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
-    space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
+    space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
     #get freq
     print "getting tally"
-    tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors, cutoff=3.0)
+    tally=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
     for f in numpy.arange(0, 1.1, 0.1):

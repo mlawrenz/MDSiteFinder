@@ -20,6 +20,9 @@ def eval_distance(mapped_state_distances, cutoff):
     mapped_cutoff_states=array([int(i) for i in mapped_cutoff_states])
     return mapped_cutoff_states
 
+def format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta):
+    line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+    return line
 
 
 def cart2sph(x,y,z):
@@ -119,7 +122,7 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
 
 # Class for 3D Grid
 class Site3D:
-    def __init__(self, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, grid=None):
+    def __init__(self, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, reduced_coors=None):
         self.pops=pops
         self.dx =resolution
         self.dy =resolution
@@ -130,21 +133,30 @@ class Site3D:
         self.tol=self.dx/2.0
         X,Y,Z=meshgrid(self.xaxis,self.yaxis,self.zaxis)
         self.pocketgrid=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
+        self.reduced_coors=reduced_coors
 
- 
-    def map_sphere_occupancy_grid(self, pocketdata, reduced_coor, cutoff=3.0, pad=None):
+    def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
         pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         # loop over all grid points
-        for frame in xrange(len(reduced_coor.keys())):
+        for frame in xrange(len(self.reduced_coors.keys())):
             frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-            distances=sp.distance.cdist(self.pocketgrid, reduced_coor[frame])
+            distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
             # array of gridpoint index, protein coor
             occupied=where(distances< cutoff)
             if occupied[0].size:
                 for index in occupied[0]:
                     coor=self.pocketgrid[index]
+                    i=where(self.xaxis==coor[0])[0]
+                    j=where(self.yaxis==coor[1])[0]
+                    k=where(self.zaxis==coor[2])[0]
+                    frameoccup[i,j,k]=0
+            check_solvated=where(distances<5.0)
+            ref=arange(0, distances.shape[0])
+            solvated_inds=setdiff1d(ref, check_solvated[0]) 
+            if solvated_inds.size:
+                for coor in self.pocketgrid[solvated_inds]:
                     i=where(self.xaxis==coor[0])[0]
                     j=where(self.yaxis==coor[1])[0]
                     k=where(self.zaxis==coor[2])[0]
@@ -164,13 +176,12 @@ class Site3D:
         for i in xrange(len(self.xaxis)):    
             for j in xrange(len(self.yaxis)):    
                 for k in xrange(len(self.zaxis)):    
-                    #if i==18 and j==19 and k==4:
                     if matrix[i,j,k]==frequency:
                         xcoor=self.xaxis[i]
                         ycoor=self.yaxis[j]
                         zcoor=self.zaxis[k]
                         atomnum=count+1
-                        line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+                        line=format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
                         ohandle.write(line)
                         count+=1
                     else:
