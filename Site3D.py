@@ -20,8 +20,8 @@ def eval_distance(mapped_state_distances, cutoff):
     mapped_cutoff_states=numpy.array([int(i) for i in mapped_cutoff_states])
     return mapped_cutoff_states
 
-def format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta):
-    line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+def format_pdb_line(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta):
+    line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta)
     return line
 
 
@@ -83,6 +83,7 @@ def parse_pocket_file(pocket_file, resolution=0.5):
 
 
 def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
+    extra=3.0 #protein search for edge effects
     reduced_coors=dict()
     xmin=100000
     xmax=0
@@ -113,7 +114,9 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
         ranges[n]=numpy.arange(int(round(mins[n])), int(round(maxes[n])), resolution)
     reduced_coors=dict()
     for frame in xrange(allcoor.shape[0]):
-        matches=numpy.where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]<maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
+        # include protein just outside of box
+        #matches=numpy.where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]< maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
+        matches=numpy.where((allcoor[frame][:,0]>=(mins[0]-extra))&(allcoor[frame][:,0]< (maxes[0]+extra))&(allcoor[frame][:,1] >= (mins[1]-extra))&(allcoor[frame][:,1] < (maxes[1]+extra))&(allcoor[frame][:,2] >= (mins[2]-extra))&(allcoor[frame][:,2] < (maxes[2]+extra)))
         reduced_coors[frame]=allcoor[frame][matches]
     return reduced_coors, ranges[0], ranges[1], ranges[2], box_volume
 
@@ -155,6 +158,11 @@ class Site3D:
             occupied=numpy.where(distances< cutoff)
             unique_occupied=numpy.unique(occupied[0]) 
             frameoccup[unique_occupied]=0
+            check_solvated=numpy.where(distances<5.0)
+            ref=numpy.arange(0, distances.shape[0])
+            unique_solvated=numpy.unique(check_solvated[0])
+            solvated_inds=numpy.setdiff1d(ref, unique_solvated) 
+            frameoccup[solvated_inds]=0
             self.pocketoccup+=frameoccup
             if init==0:
                 framelog=frameoccup
@@ -163,10 +171,6 @@ class Site3D:
                 framelog=numpy.vstack((framelog, frameoccup))
             # turn off check solvated search, can do visualization post
             # processing
-            #check_solvated=numpy.where(distances<5.0)
-            #ref=numpy.arange(0, distances.shape[0])
-            #solvated_inds=numpy.setdiff1d(ref, check_solvated[0]) 
-            #frameoccup[solvated_inds]=0
         return framelog
 
 
@@ -174,6 +178,9 @@ class Site3D:
         count=0
         atomname='DUM'
         resid=1
+        resid_alpha='ABCDEFGHIJKLMOPQRSTUVWXYZ'
+        resid_alpha=resid_alpha*100
+        resid_count=0
         resname='DUM'
         occupancy=0.00
         beta=0.00
@@ -182,28 +189,16 @@ class Site3D:
             xcoor=self.pocketgrid[index][0]
             ycoor=self.pocketgrid[index][1]
             zcoor=self.pocketgrid[index][2]
-            #exclude edges at 1 Ang
-            if xcoor >= self.xaxis[0] and xcoor <= self.xaxis[0]+buffer:
-                count+=1
-                continue
-            if ycoor >= self.yaxis[0] and ycoor <= self.yaxis[0]+buffer:
-                count+=1
-                continue
-            if zcoor >= self.zaxis[0] and zcoor <= self.zaxis[0]+buffer:
-                count+=1
-                continue
-            if xcoor <= self.xaxis[-1] and xcoor >= self.xaxis[-1]-buffer:
-                count+=1
-                continue
-            if ycoor <= self.yaxis[-1] and ycoor >= self.yaxis[-1]-buffer:
-                count+=1
-                continue
-            if zcoor <= self.zaxis[-1] and zcoor >= self.zaxis[-1]-buffer:
-                count+=1
-                continue
             atomnum=count+1
-            resid=count+1
-            line=format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
+            # keep spheres as diff residues, but can't be over 4 digits (add
+            # alpha)
+            if len(str(resid))>3:
+                resid=1
+                resid_count+=1
+            resnum='%s%s' % (resid_alpha[resid_count], resid)
+            print resnum
+            resid+=1
+            line=format_pdb_line(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta)
             ohandle.write(line)
             count+=1
         ohandle.close()

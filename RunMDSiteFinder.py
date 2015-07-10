@@ -64,7 +64,9 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     print "saved frametally %0.4f sec" % elapse
     # work with gridpoints directly if only writing PDBs
     freq=space.pocketoccup/total_frames
-    freq=numpy.round(freq, decimals=1) 
+    #freq=numpy.round(freq, decimals=1) 
+    import pdb
+    pdb.set_trace()
     for f in numpy.arange(0, 1.1, 0.1):
         frames=numpy.where(freq==f)[0]
         if frames.size:
