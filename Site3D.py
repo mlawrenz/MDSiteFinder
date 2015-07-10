@@ -152,10 +152,12 @@ class Site3D:
             occupied=numpy.where(distances< cutoff)
             unique_occupied=numpy.unique(occupied[0]) 
             frameoccup[unique_occupied]=0
-            check_solvated=numpy.where(distances<5.0)
-            ref=numpy.arange(0, distances.shape[0])
-            solvated_inds=numpy.setdiff1d(ref, check_solvated[0]) 
-            frameoccup[solvated_inds]=0
+            # turn off check solvated search, can do visualization post
+            # processing
+            #check_solvated=numpy.where(distances<5.0)
+            #ref=numpy.arange(0, distances.shape[0])
+            #solvated_inds=numpy.setdiff1d(ref, check_solvated[0]) 
+            #frameoccup[solvated_inds]=0
             self.pocketoccup+=frameoccup
         return
 
