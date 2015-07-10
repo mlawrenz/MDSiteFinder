@@ -1,4 +1,5 @@
 import Site3D
+import time
 import mdtraj
 import optparse
 import pylab
@@ -50,7 +51,11 @@ def main(pocketfile, trajfile, topo, outname):
     space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
     #get freq
     print "getting tally"
+    start=float(time.time())
     space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    end=float(time.time())
+    elapse=end-start
+    print "tallied all frames and gridpoint %0.4f sec" % elapse
     #need to reshape space.pocketoccup j,i,k due to ravel
     freq=numpy.zeros((len(space.xaxis), len(space.yaxis), len(space.zaxis)))
     count=0
