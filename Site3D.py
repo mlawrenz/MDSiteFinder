@@ -170,7 +170,7 @@ class Site3D:
         return framelog
 
 
-    def write_pdb(self, dir, outname, frequency_indices, freq_val):
+    def write_pdb(self, dir, outname, frequency_indices, freq_val, buffer=1.0):
         count=0
         atomname='DUM'
         resid=1
@@ -182,6 +182,25 @@ class Site3D:
             xcoor=self.pocketgrid[index][0]
             ycoor=self.pocketgrid[index][1]
             zcoor=self.pocketgrid[index][2]
+            #exclude edges at 1 Ang
+            if xcoor >= self.xaxis[0] and xcoor <= self.xaxis[0]+buffer:
+                count+=1
+                continue
+            if ycoor >= self.yaxis[0] and ycoor <= self.yaxis[0]+buffer:
+                count+=1
+                continue
+            if zcoor >= self.zaxis[0] and zcoor <= self.zaxis[0]+buffer:
+                count+=1
+                continue
+            if xcoor <= self.xaxis[-1] and xcoor >= self.xaxis[-1]-buffer:
+                count+=1
+                continue
+            if ycoor <= self.yaxis[-1] and ycoor >= self.yaxis[-1]-buffer:
+                count+=1
+                continue
+            if zcoor <= self.zaxis[-1] and zcoor >= self.zaxis[-1]-buffer:
+                count+=1
+                continue
             atomnum=count+1
             resid=count+1
             line=format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta)
