@@ -33,7 +33,7 @@ is aligned to the reference structure.
 def main(pocketfile, trajfile, topo, outname):
     # load traj
     resolution=0.5
-    pad=5.0
+    pad=7.0
     dir=os.path.dirname(trajfile)
     traj=mdtraj.load(trajfile, top=topo)
     newcoors=10*traj.xyz
@@ -48,7 +48,10 @@ def main(pocketfile, trajfile, topo, outname):
     tally=space.map_sphere_occupancy_grid(pocket_data, reduced_coors)
     freq=tally/total_frames
     freq=numpy.round(freq, decimals=1) 
-    space.write_pdb(dir, freq,1.0)
+    for f in numpy.arange(0, 1.1, 0.1):
+        frame=numpy.where(freq==f)[0]
+        if frame.size:
+            space.write_pdb(dir, outname, freq,f)
     frames=numpy.where(freq!=1)[0]
     print freq.min(), freq.max()
     space.write_dx(freq, dir, outname)
