@@ -184,7 +184,7 @@ class Site3D:
         resname='DUM'
         occupancy=0.00
         beta=0.00
-        ohandle=open('%s/%s_open%0.1f.pdb' % (dir, outname, freq_val), 'w')
+        ohandle=open('%s/open%0.1f_%s.pdb' % (dir, freq_val, outname), 'w')
         for index in frequency_indices:
             xcoor=self.pocketgrid[index][0]
             ycoor=self.pocketgrid[index][1]
@@ -196,7 +196,6 @@ class Site3D:
                 resid=1
                 resid_count+=1
             resnum='%s%s' % (resid_alpha[resid_count], resid)
-            print resnum
             resid+=1
             line=format_pdb_line(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta)
             ohandle.write(line)
