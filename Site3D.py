@@ -142,10 +142,12 @@ class Site3D:
             distances=sp.distance.cdist(self.pocketgrid, reduced_coor[frame])
             # array of gridpoint index, protein coor
             occupied=where(distances< cutoff)
+            testarray=array([33.5, 40.0, 26.0])
+            import pdb
+            pdb.set_trace()
             if occupied[0].size:
                 for index in occupied[0]:
                     coor=self.pocketgrid[index]
-                    testarray=array([38.0, 47.5, 25.0])
                     i=where(self.xaxis==coor[0])[0]
                     j=where(self.yaxis==coor[1])[0]
                     k=where(self.zaxis==coor[2])[0]
@@ -162,7 +164,7 @@ class Site3D:
         occupancy=0.00
         beta=0.00
         testarray=array([38.0, 47.5, 25.0])
-        ohandle=open('%s/%s_pocketgrid_open%0.1f.pdb' % (dir, outname, frequency), 'w')
+        ohandle=open('%s/%s_open%0.1f.pdb' % (dir, outname, frequency), 'w')
         for i in xrange(len(self.xaxis)):    
             for j in xrange(len(self.yaxis)):    
                 for k in xrange(len(self.zaxis)):    
