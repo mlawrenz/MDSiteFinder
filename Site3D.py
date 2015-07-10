@@ -5,7 +5,7 @@ import pickle
 import multiprocessing
 import optparse
 import pylab
-from numpy import *
+import numpy
 import glob
 import os
 
@@ -17,7 +17,7 @@ def eval_distance(mapped_state_distances, cutoff):
         # if mindist to protein > cutoff, add to unbound frames 
         if mapped_state_distances[state] > cutoff:
             mapped_cutoff_states.append(state)
-    mapped_cutoff_states=array([int(i) for i in mapped_cutoff_states])
+    mapped_cutoff_states=numpy.array([int(i) for i in mapped_cutoff_states])
     return mapped_cutoff_states
 
 def format_pdb_line(atomnum, atomname, resname, resid, xcoor, ycoor, zcoor, occupancy, beta):
@@ -43,9 +43,9 @@ def sph2cart(r, az, elev):
     
 def pocket_sphere_coors(radius, center, resolution):
     sphere_cart_coors=[]
-    for dx in arange(-radius,radius, resolution):
-        for dy in arange(-radius,radius, resolution):
-            for dz in arange(-radius,radius, resolution):
+    for dx in numpy.arange(-radius,radius, resolution):
+        for dy in numpy.arange(-radius,radius, resolution):
+            for dz in numpy.arange(-radius,radius, resolution):
                 sphere_cart_coors.append((center[0]+dx, center[1]+dy, center[2]+dz))
     return sphere_cart_coors     
             
@@ -110,10 +110,10 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
     total=max(lengths.values())
     ranges=dict()
     for n in range(0,3):
-        ranges[n]=arange(int(round(mins[n])), int(round(maxes[n])), resolution)
+        ranges[n]=numpy.arange(int(round(mins[n])), int(round(maxes[n])), resolution)
     reduced_coors=dict()
     for frame in xrange(allcoor.shape[0]):
-        matches=where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]<maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
+        matches=numpy.where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]<maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
         reduced_coors[frame]=allcoor[frame][matches]
     return reduced_coors, ranges[0], ranges[1], ranges[2], box_volume
 
@@ -127,42 +127,37 @@ class Site3D:
         self.dx =resolution
         self.dy =resolution
         self.dz=resolution
-        self.xaxis = array(xaxis)
-        self.yaxis = array(yaxis)
-        self.zaxis = array(zaxis)
+        self.xaxis = numpy.array(xaxis)
+        self.yaxis = numpy.array(yaxis)
+        self.zaxis = numpy.array(zaxis)
         self.tol=self.dx/2.0
-        X,Y,Z=meshgrid(self.xaxis,self.yaxis,self.zaxis)
-        self.pocketgrid=vstack((X.ravel(), Y.ravel(), Z.ravel())).T
+        X,Y,Z=numpy.meshgrid(self.xaxis,self.yaxis,self.zaxis)
+        # gives a grid that is indexed by looping over y,x,z and shape of total
+        # gridpoints
+        self.pocketgrid=numpy.vstack((X.ravel(), Y.ravel(), Z.ravel())).T
+        # initialize tally with zero, will reshape it later
+        self.pocketoccup=numpy.zeros((self.pocketgrid.shape[0]))
         self.reduced_coors=reduced_coors
 
     def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
         # pocketdata has spheres n with center and radii
         # all coor is all protein coors
-        pocketoccup=zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         # loop over all grid points
         for frame in xrange(len(self.reduced_coors.keys())):
-            frameoccup=ones((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
+            frameoccup=numpy.ones((self.pocketgrid.shape[0]))
             distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
             # array of gridpoint index, protein coor
-            occupied=where(distances< cutoff)
-            if occupied[0].size:
-                for index in occupied[0]:
-                    coor=self.pocketgrid[index]
-                    i=where(self.xaxis==coor[0])[0]
-                    j=where(self.yaxis==coor[1])[0]
-                    k=where(self.zaxis==coor[2])[0]
-                    frameoccup[i,j,k]=0
-            check_solvated=where(distances<5.0)
-            ref=arange(0, distances.shape[0])
-            solvated_inds=setdiff1d(ref, check_solvated[0]) 
-            if solvated_inds.size:
-                for coor in self.pocketgrid[solvated_inds]:
-                    i=where(self.xaxis==coor[0])[0]
-                    j=where(self.yaxis==coor[1])[0]
-                    k=where(self.zaxis==coor[2])[0]
-                    frameoccup[i,j,k]=0
-            pocketoccup+=frameoccup
-        return pocketoccup
+            # shape of occupied is gridpoint, protein atom close
+            # count gridpoints with at least 1 protein atom close
+            occupied=numpy.where(distances< cutoff)
+            unique_occupied=numpy.unique(occupied[0]) 
+            frameoccup[unique_occupied]=0
+            check_solvated=numpy.where(distances<5.0)
+            ref=numpy.arange(0, distances.shape[0])
+            solvated_inds=numpy.setdiff1d(ref, check_solvated[0]) 
+            frameoccup[solvated_inds]=0
+            self.pocketoccup+=frameoccup
+        return
 
 
     def write_pdb(self, dir, outname, matrix, frequency):
@@ -199,7 +194,7 @@ class Site3D:
         newfile.write('delta 0 0 %s\n' % self.dz)
         newfile.write('object 2 class gridconnections counts %s %s %s\n' % (GD.shape[0], GD.shape[1], GD.shape[2]))
         newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (GD.shape[0]*GD.shape[1]*GD.shape[2]))
-        intergrid=zeros((GD.shape[0], GD.shape[1], GD.shape[2]))
+        intergrid=numpy.zeros((GD.shape[0], GD.shape[1], GD.shape[2]))
         count=0
         for i in range(0, GD.shape[0]):
             for j in range(0, GD.shape[1]):

@@ -50,8 +50,15 @@ def main(pocketfile, trajfile, topo, outname):
     space=Site3D.Site3D(resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
     #get freq
     print "getting tally"
-    tally=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
-    freq=tally/total_frames
+    space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    #need to reshape space.pocketoccup j,i,k due to ravel
+    freq=numpy.zeros((len(space.xaxis), len(space.yaxis), len(space.zaxis)))
+    count=0
+    for j in range(0, len(space.yaxis)):
+        for i in range(0, len(space.zaxis)):
+            for k in range(0, len(space.zaxis)):
+                freq[i,j,k]=space.pocketoccup[count]/total_frames
+                count+=1
     freq=numpy.round(freq, decimals=1) 
     for f in numpy.arange(0, 1.1, 0.1):
         frame=numpy.where(freq==f)[0]
