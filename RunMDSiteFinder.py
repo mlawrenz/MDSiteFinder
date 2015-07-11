@@ -31,7 +31,7 @@ is aligned to the reference structure.
 
 """
 
-def main(pocketfile, trajfile, topo, outname, writedx=True):
+def main(pocketdir, trajfile, topo, outname, writedx=True):
     # load traj
     resolution=0.5
     pad=7.0
@@ -46,7 +46,8 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
     total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
-    pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
+    # print "REQUIRES NO HEADER OR FOOTER IN PDB FILE"
+    pocket_data=Site3D.parse_all_pocket_files(pocketdir, resolution)
     print "getting min max"
     reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
     space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
@@ -81,7 +82,7 @@ def parse_commandline():
                       help='topology')
     parser.add_option('-t', '--trajfile', dest='trajfile',
                       help='MD traj file')
-    parser.add_option('-p', '--pocketfile', dest='pocketfile',
+    parser.add_option('-p', '--pocketdir', dest='pocketdir',
                       help='protein pocket file output from MOE SiteFinder')
     #parser.add_option('-f', action="store_true", dest="writefree", help='perform free energy calc with P-L COM distances')
     (options, args) = parser.parse_args()
@@ -91,6 +92,6 @@ def parse_commandline():
 if __name__ == "__main__":
     (options, args) = parse_commandline()
     #if options.writefree==True:
-    main(pocketfile=options.pocketfile, trajfile=options.trajfile, topo=options.topo, outname=options.outname)
+    main(pocketdir=options.pocketdir, trajfile=options.trajfile, topo=options.topo, outname=options.outname)
 
 

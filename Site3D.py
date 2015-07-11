@@ -50,36 +50,27 @@ def pocket_sphere_coors(radius, center, resolution):
     return sphere_cart_coors     
             
 
-def parse_pocket_file(pocket_file, resolution=0.5):
-    pocket_data=dict()
-    fhandle=open(pocket_file)
-    n=0
-    for line in fhandle.readlines():
-        if len(line) < 2:
-            break
-        pocket_data[n]=dict()
-        atom=line[0:3]
-        atomnum=line[6:10]
-        atomname=line[12:15]
-        resname=line[16:20]
-        chain=line[21]
-        resnum=line[22:25]
-        xcoor=float(line[30:37])
-        ycoor=float(line[38:45])
-        zcoor=float(line[46:53])
-        # official
-        occupancy=line[56:61]
-        beta=line[62:67]
-        print "sphere %s radius %s" % (n, beta)
-        # may want this flex
-        #occupancy=line[67:70]
-        #beta=line[54:59]
-        radius=float(beta)
-        center=(xcoor, ycoor, zcoor)
-        pocket_data[n]['center']=center
-        pocket_data[n]['radius']=radius
-        n+=1
-    return pocket_data
+def parse_all_pocket_files(pocketdir, resolution=0.5):
+    framedata=dict()
+    index=0
+    print  sorted(glob.glob('%s/*pdb' % pocketdir))
+    for file in sorted(glob.glob('%s/*pdb' % pocketdir)):
+        framedata[index]=dict()
+        sites=numpy.loadtxt(file, usecols=(3,))
+        xcoor=numpy.loadtxt(file, usecols=(5,))
+        ycoor=numpy.loadtxt(file, usecols=(6,))
+        zcoor=numpy.loadtxt(file, usecols=(7,))
+        radii=numpy.loadtxt(file, usecols=(9,))
+        for site in set(sites):
+            framedata[index][site]=dict()
+            frames=numpy.where(sites==site)[0]            
+            centers=numpy.dstack((xcoor[frames], ycoor[frames], zcoor[frames]))
+            framedata[index][site]['centers']=centers.reshape(centers.shape[1], centers.shape[2])
+            framedata[index][site]['radii']=radii[frames]
+        index+=1
+    import pdb
+    pdb.set_trace()
+    return framedata
 
 
 def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
