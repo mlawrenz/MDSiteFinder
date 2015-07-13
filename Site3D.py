@@ -40,7 +40,7 @@ def sph2cart(r, az, elev):
     y=r*math.sin(az)*sin(elev)
     z=r*math.cos(elev)
     return x,y,z
-    
+
 def pocket_sphere_coors(radius, center, resolution):
     sphere_cart_coors=[]
     for dx in numpy.arange(-radius,radius, resolution):
@@ -55,27 +55,34 @@ def parse_all_pocket_files(pocketdir, resolution=0.5):
     index=0
     print  sorted(glob.glob('%s/*pdb' % pocketdir))
     for file in sorted(glob.glob('%s/*pdb' % pocketdir)):
-        framedata[index]=dict()
         sites=numpy.loadtxt(file, usecols=(3,))
         xcoor=numpy.loadtxt(file, usecols=(5,))
         ycoor=numpy.loadtxt(file, usecols=(6,))
         zcoor=numpy.loadtxt(file, usecols=(7,))
         radii=numpy.loadtxt(file, usecols=(9,))
-        for site in set(sites):
-            framedata[index][site]=dict()
-            frames=numpy.where(sites==site)[0]            
-            centers=numpy.dstack((xcoor[frames], ycoor[frames], zcoor[frames]))
-            framedata[index][site]['centers']=centers.reshape(centers.shape[1], centers.shape[2])
-            framedata[index][site]['radii']=radii[frames]
+        centers=numpy.dstack((xcoor, ycoor, zcoor))
+        centers=centers.reshape(centers.shape[1],  centers.shape[2])
+        pocket_coors=[]
+        for i in xrange(len(centers)):
+            coors=pocket_sphere_coors(radii[i], centers[i], resolution)
+            if i==0:
+                pocketcoors=coors
+                i+=1
+            else:
+                pocketcoors=numpy.vstack((pocketcoors, coors))
+        framedata[index]=pocketcoors
         index+=1
-    import pdb
-    pdb.set_trace()
+        #for site in set(sites):
+        #    framedata[index][site]=dict()
+        #    frames=numpy.where(sites==site)[0]            
+        #    centers=numpy.dstack((xcoor[frames], ycoor[frames], zcoor[frames]))
+        #    framedata[index][site]['centers']=centers.reshape(centers.shape[1], centers.shape[2])
+        #    framedata[index][site]['radii']=radii[frames]
     return framedata
 
 
-def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
+def protein_grid(allcoor, pad=3.0, resolution=0.5):
     extra=3.0 #protein search for edge effects
-    reduced_coors=dict()
     xmin=100000
     xmax=0
     ymin=100000
@@ -84,14 +91,14 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
     zmax=0
     mins=[xmin, ymin, zmin]
     maxes=[xmax, ymax, zmax]
-    for sphere in sorted(pocket_data.keys()):
-        for frame in xrange(allcoor.shape[0]):
-            for n in range(0,3):
-                new=allcoor[frame][abs(allcoor[frame][:,n]-pocket_data[sphere]['center'][n]) < pocket_data[sphere]['radius']]    
-                if min(new[:,n]) < mins[n]:
-                    mins[n]=min(new[:,n])
-                elif max(new[:,n]) > maxes[n]:
-                    maxes[n]=max(new[:,n])
+    for frame in xrange(allcoor.shape[0]):
+        for n in range(0,3):
+            mintest=numpy.min(allcoor[:,:,n].flatten())
+            maxtest=numpy.max(allcoor[:,:,n].flatten())
+            if mintest < mins[n]:
+                mins[n]=mintest
+            elif maxtest > maxes[n]:
+                maxes[n]=maxtest
     lengths=dict()
     for n in range(0,3):
         maxes[n]=maxes[n]+pad
@@ -103,46 +110,38 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
     ranges=dict()
     for n in range(0,3):
         ranges[n]=numpy.arange(int(round(mins[n])), int(round(maxes[n])), resolution)
-    reduced_coors=dict()
-    for frame in xrange(allcoor.shape[0]):
-        # include protein just outside of box
-        #matches=numpy.where((allcoor[frame][:,0]>=mins[0])&(allcoor[frame][:,0]< maxes[0])&(allcoor[frame][:,1] >= mins[1])&(allcoor[frame][:,1] < maxes[1])&(allcoor[frame][:,2] >= mins[2])&(allcoor[frame][:,2] < maxes[2]))
-        matches=numpy.where((allcoor[frame][:,0]>=(mins[0]-extra))&(allcoor[frame][:,0]< (maxes[0]+extra))&(allcoor[frame][:,1] >= (mins[1]-extra))&(allcoor[frame][:,1] < (maxes[1]+extra))&(allcoor[frame][:,2] >= (mins[2]-extra))&(allcoor[frame][:,2] < (maxes[2]+extra)))
-        reduced_coors[frame]=allcoor[frame][matches]
-    return reduced_coors, ranges[0], ranges[1], ranges[2], box_volume
-
-
+    return ranges[0], ranges[1], ranges[2], box_volume
 
 
 # Class for 3D Grid
 class Site3D:
-    def __init__(self, total_frames, resolution=0.5, pops=None, xaxis=None, yaxis=None, zaxis=None, reduced_coors=None):
+    def __init__(self, total_frames, resolution=0.5, xaxis=None, yaxis=None, zaxis=None):
         self.total_frames=total_frames
-        self.pops=pops
         self.dx =resolution
         self.dy =resolution
         self.dz=resolution
         self.xaxis = numpy.array(xaxis)
         self.yaxis = numpy.array(yaxis)
         self.zaxis = numpy.array(zaxis)
-        self.tol=self.dx/2.0
-        X,Y,Z=numpy.meshgrid(self.xaxis,self.yaxis,self.zaxis)
+        
         # gives a grid that is indexed by looping over y,x,z and shape of total
-        # gridpoints
+        X,Y,Z=numpy.meshgrid(self.xaxis,self.yaxis,self.zaxis)
         self.pocketgrid=numpy.vstack((X.ravel(), Y.ravel(), Z.ravel())).T
-        # initialize tally with zero, will reshape it later
         self.pocketoccup=numpy.zeros((self.pocketgrid.shape[0]))
-        self.reduced_coors=reduced_coors
+        #self.reduced_coors=reduced_coors
 
-    def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
-        # pocketdata has spheres n with center and radii
+    def map_sphere_occupancy_grid(self, framedata, cutoff=3.0, pad=None):
+        # framedata has frame info with all coors in an alpha sphere
+        # map these coors into occupancy grid
         # all coor is all protein coors
         # loop over all grid points
         # save frameoccupancies
         init=0
-        for frame in xrange(len(self.reduced_coors.keys())):
+        for frame in xrange(len(framedata.keys())):
             frameoccup=numpy.ones((self.pocketgrid.shape[0]))
-            distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
+            for i in framedata[frame]:
+                index=numpy.where(self.pocketgrid[:0] < i[0]
+            distances=sp.distance.cdist(self.pocketgrid, framedata[frame])
             # array of gridpoint index, protein coor
             # shape of occupied is gridpoint, protein atom close
             # count gridpoints with at least 1 protein atom close

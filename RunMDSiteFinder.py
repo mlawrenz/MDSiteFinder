@@ -44,17 +44,19 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
         if 'H' not in i.name:
             indices.append(i.index)
     newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
+    print "getting protein grid size from trajectory"
+    x_range, y_range, z_range, box_volume=Site3D.protein_grid(newcoors, pad=3.0, resolution=0.5)
     total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
     # print "REQUIRES NO HEADER OR FOOTER IN PDB FILE"
-    pocket_data=Site3D.parse_all_pocket_files(pocketdir, resolution)
-    print "getting min max"
-    reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
-    space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
+    framedata=Site3D.parse_all_pocket_files(pocketdir, resolution)
+    space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
     #get freq
+    import pdb
+    pdb.set_trace()
     print "getting tally"
     start=float(time.time())
-    framelog=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    framelog=space.map_sphere_occupancy_grid(framedata, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
