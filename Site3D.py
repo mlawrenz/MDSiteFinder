@@ -55,6 +55,7 @@ def parse_all_pocket_files(pocketdir, resolution=0.5):
     index=0
     print  sorted(glob.glob('%s/*pdb' % pocketdir))
     for file in sorted(glob.glob('%s/*pdb' % pocketdir)):
+        framedata[index]=dict()
         sites=numpy.loadtxt(file, usecols=(3,))
         xcoor=numpy.loadtxt(file, usecols=(5,))
         ycoor=numpy.loadtxt(file, usecols=(6,))
@@ -133,25 +134,25 @@ class Site3D:
         self.pocketoccup=numpy.zeros((self.pocketgrid.shape[0]))
         #self.reduced_coors=reduced_coors
 
-    def map_sphere_occupancy_grid(self, framedata, cutoff=3.0, pad=None):
-        # framedata has frame info with all coors in an alpha sphere
-        # map these coors into occupancy grid
+    def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
+        # pocketdata has spheres n with center and radii
         # all coor is all protein coors
         # loop over all grid points
         # save frameoccupancies
-        alloccup=numpy.zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         init=0
-        for frame in xrange(len(framedata.keys())):
-            frameoccup=numpy.zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
-            for i in framedata[frame]:
-                x_location=numpy.where((self.xaxis>=i[0])&(self.xaxis< i[0]+self.dx))[0]
-                y_location=numpy.where((self.yaxis>=i[1])&(self.yaxis< i[1]+self.dy))[0]
-                z_location=numpy.where((self.zaxis>=i[2])&(self.zaxis< i[2]+self.dz))[0]
-                frameoccup[x_location, y_location, z_location]=1
-            #distances=sp.distance.cdist(self.pocketgrid, framedata[frame])
-            alloccup+=frameoccup
-        return alloccup
-
+        for frame in range(0, self.total_frames):
+            frameoccup=numpy.zeros((self.pocketgrid.shape[0]))
+            distances=sp.distance.cdist(self.pocketgrid, pocketdata[frame]['centers'])
+            for index in xrange(pocketdata[frame]['centers'].shape[0]):
+                frames=numpy.where(distances[:,index] < pocketdata[frame]['radii'][index])[0]
+                frameoccup[frames]=1
+            self.pocketoccup+=frameoccup
+            if init==0:
+                framelog=frameoccup
+                init+=1
+            else:
+                framelog=numpy.vstack((framelog, frameoccup))
+        return framelog
 
     def write_pdb(self, outfile, x_loc, y_loc, z_loc):
         count=0
