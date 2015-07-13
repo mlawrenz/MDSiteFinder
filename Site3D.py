@@ -10,45 +10,11 @@ import glob
 import os
 
 # Helper Functions
-def eval_distance(mapped_state_distances, cutoff):
-    # assumes mapped states and state_distances
-    mapped_cutoff_states=[]
-    for state in xrange(len(mapped_state_distances)):
-        # if mindist to protein > cutoff, add to unbound frames 
-        if mapped_state_distances[state] > cutoff:
-            mapped_cutoff_states.append(state)
-    mapped_cutoff_states=numpy.array([int(i) for i in mapped_cutoff_states])
-    return mapped_cutoff_states
 
 def format_pdb_line(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta):
     line='ATOM{0: >7}{1: >4} {2:>4} X{3:>4}    {4: >8.3f}{5: >8.3f}{6: >8.3f}{7: >6.2f}{8: >6.2f} \n'.format(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta)
     return line
 
-
-def cart2sph(x,y,z):
-    XsqPlusYsq = x**2 + y**2
-    r = math.sqrt(XsqPlusYsq + z**2)               # r
-    elev = math.acos((z/math.sqrt(XsqPlusYsq)))       # theta
-    az = math.atan((y/x))                           # phi
-    return r,  math.degrees(az), math.degrees(elev)
-
-
-def sph2cart(r, az, elev):
-    elev=math.radians(elev)
-    az=math.radians(az)
-    x=r*math.cos(az)*sin(elev)
-    y=r*math.sin(az)*sin(elev)
-    z=r*math.cos(elev)
-    return x,y,z
-
-def pocket_sphere_coors(radius, center, resolution):
-    sphere_cart_coors=[]
-    for dx in numpy.arange(-radius,radius, resolution):
-        for dy in numpy.arange(-radius,radius, resolution):
-            for dz in numpy.arange(-radius,radius, resolution):
-                sphere_cart_coors.append((center[0]+dx, center[1]+dy, center[2]+dz))
-    return sphere_cart_coors     
-            
 
 def parse_all_pocket_files(pocketdir, resolution=0.5):
     framedata=dict()
@@ -56,7 +22,7 @@ def parse_all_pocket_files(pocketdir, resolution=0.5):
     print  sorted(glob.glob('%s/*pdb' % pocketdir))
     for file in sorted(glob.glob('%s/*pdb' % pocketdir)):
         framedata[index]=dict()
-        sites=numpy.loadtxt(file, usecols=(3,))
+        sites=numpy.loadtxt(file, usecols=(4,))
         xcoor=numpy.loadtxt(file, usecols=(5,))
         ycoor=numpy.loadtxt(file, usecols=(6,))
         zcoor=numpy.loadtxt(file, usecols=(7,))
@@ -66,22 +32,6 @@ def parse_all_pocket_files(pocketdir, resolution=0.5):
         framedata[index]['centers']=centers
         framedata[index]['radii']=radii
         index+=1
-        #pocket_coors=[]
-        #for i in xrange(len(centers)):
-        #    coors=pocket_sphere_coors(radii[i], centers[i], resolution)
-        #    if i==0:
-        #        pocketcoors=coors
-        #        i+=1
-        #    else:
-        #        pocketcoors=numpy.vstack((pocketcoors, coors))
-        #framedata[index]=pocketcoors
-        #index+=1
-        #for site in set(sites):
-        #    framedata[index][site]=dict()
-        #    frames=numpy.where(sites==site)[0]            
-        #    centers=numpy.dstack((xcoor[frames], ycoor[frames], zcoor[frames]))
-        #    framedata[index][site]['centers']=centers.reshape(centers.shape[1], centers.shape[2])
-        #    framedata[index][site]['radii']=radii[frames]
     return framedata
 
 
@@ -136,9 +86,7 @@ class Site3D:
 
     def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
         # pocketdata has spheres n with center and radii
-        # all coor is all protein coors
-        # loop over all grid points
-        # save frameoccupancies
+        # compute distance to all grid points and save those within radii
         init=0
         for frame in range(0, self.total_frames):
             frameoccup=numpy.zeros((self.pocketgrid.shape[0]))
