@@ -187,11 +187,10 @@ ycoor, zcoor, occupancy, beta)
 
     def write_dx(self, outfile):
         # reshape freq due to ravel in order to format for OpenDX
-        reshape_freq=numpy.zeros((len(self.xaxis),
-len(self.yaxis),len(self.zaxis)))
+        reshape_freq=numpy.zeros((len(self.xaxis), len(self.yaxis),len(self.zaxis)))
         count=0
         for j in range(0, len(self.yaxis)):
-            for i in range(0, len(self.zaxis)):
+            for i in range(0, len(self.xaxis)):
                 for k in range(0, len(self.zaxis)):
                     reshape_freq[i,j,k]=self.pocketoccup[count]/self.total_frames
                     count+=1
