@@ -154,7 +154,7 @@ class Site3D:
                 framelog=numpy.vstack((framelog, frameoccup))
         return framelog
 
-    def write_pdb(self, outfile, x_loc, y_loc, z_loc):
+    def write_pdb(self, outfile, frequency_indices, freq_val):
         count=0
         atomname='DUM'
         resid=1
@@ -165,10 +165,10 @@ class Site3D:
         occupancy=0.00
         beta=0.00
         ohandle=open(outfile, 'w')
-        for (i,j,k) in zip(x_loc, y_loc, z_loc):
-            xcoor=self.xaxis[i]
-            ycoor=self.xaxis[j]
-            zcoor=self.xaxis[k]
+        for index in frequency_indices:
+            xcoor=self.pocketgrid[index][0]
+            ycoor=self.pocketgrid[index][1]
+            zcoor=self.pocketgrid[index][2]
             atomnum=count+1
             # keep spheres as diff residues, but can't be over 4 digits (add
             # alpha)
@@ -177,11 +177,13 @@ class Site3D:
                 resid_count+=1
             resnum='%s%s' % (resid_alpha[resid_count], resid)
             resid+=1
-            line=format_pdb_line(atomnum, atomname, resname, resnum, xcoor, ycoor, zcoor, occupancy, beta)
+            line=format_pdb_line(atomnum, atomname, resname, resnum, xcoor,
+ycoor, zcoor, occupancy, beta)
             ohandle.write(line)
             count+=1
         ohandle.close()
         return
+
 
     def write_dx(self, freq, dir, filename):
         newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
