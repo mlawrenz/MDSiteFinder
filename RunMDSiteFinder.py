@@ -52,21 +52,25 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
     #get freq
     print "getting tally"
     start=float(time.time())
-    alloccup=space.map_sphere_occupancy_grid(framedata, cutoff=3.0)
+    framelog=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
+    start=float(time.time())
+    numpy.savetxt('%s/%s_framelog_matrix.dat' % (dir, outname), framelog)
+    end=float(time.time())
+    elapse=end-start
+    print "saved frametally %0.4f sec" % elapse
     # work with gridpoints directly if only writing PDBs
-    freq=alloccup/total_frames
+    freq=space.pocketoccup/total_frames
     freq=numpy.round(freq, decimals=1) 
-    if writedx==True:
-        space.write_dx(freq, dir, outname)
     for f in numpy.arange(0, 1.1, 0.1):
         outfile='%s/open%0.1f_%s.pdb' % (dir, f, outname)
-        x_loc, y_loc, z_loc=numpy.where(freq==f)
-        if x_loc.size:
-            space.write_pdb(outfile,x_loc, y_loc, z_loc)
-
+        frames=numpy.where(freq==f)[0]
+        if frames.size:
+            space.write_pdb(outfile, frames)
+    if writedx==True:
+        space.write_dx(dir, outname)
 
 def parse_commandline():
     parser = optparse.OptionParser()
