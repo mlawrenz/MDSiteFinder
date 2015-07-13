@@ -85,7 +85,7 @@ def parse_all_pocket_files(pocketdir, resolution=0.5):
     return framedata
 
 
-def protein_grid(allcoor, pad=3.0, resolution=0.5):
+def protein_grid(allcoor, resolution=0.5):
     extra=3.0 #protein search for edge effects
     xmin=100000
     xmax=0
@@ -105,8 +105,8 @@ def protein_grid(allcoor, pad=3.0, resolution=0.5):
                 maxes[n]=maxtest
     lengths=dict()
     for n in range(0,3):
-        maxes[n]=maxes[n]+pad
-        mins[n]=mins[n]-pad
+        maxes[n]=maxes[n]+resolution
+        mins[n]=mins[n]-resolution
         lengths[n]=int(((round(maxes[n]))-round(mins[n])))
     box_volume=lengths[0]*lengths[1]*lengths[2]
     print "protein box volume %s angstroms^3" % box_volume
@@ -154,7 +154,7 @@ class Site3D:
                 framelog=numpy.vstack((framelog, frameoccup))
         return framelog
 
-    def write_pdb(self, outfile, frequency_indices, freq_val):
+    def write_pdb(self, outfile, frequency_indices):
         count=0
         atomname='DUM'
         resid=1
@@ -185,37 +185,42 @@ ycoor, zcoor, occupancy, beta)
         return
 
 
-    def write_dx(self, freq, dir, filename):
-        newfile=open('%s/%s_sitefrequency.dx' % (dir, filename), 'w')
+    def write_dx(self, outfile):
+        # reshape freq due to ravel in order to format for OpenDX
+        reshape_freq=numpy.zeros((len(self.xaxis),
+len(self.yaxis),len(self.zaxis)))
+        count=0
+        for j in range(0, len(self.yaxis)):
+            for i in range(0, len(self.zaxis)):
+                for k in range(0, len(self.zaxis)):
+                    reshape_freq[i,j,k]=self.pocketoccup[count]/self.total_frames
+                    count+=1
+        newfile=open(outfile, 'w')
         newfile.write('# Data calculated Pocket open frequency\n')
-        newfile.write('object 1 class gridpositions counts %s %s %s\n' %
-(freq.shape[0], freq.shape[1], freq.shape[2]))
-        newfile.write('origin %s %s %s\n' % (self.xaxis[0], self.yaxis[0],
-self.zaxis[0]))
+        newfile.write('object 1 class gridpositions counts %s %s %s\n' % (reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
+        newfile.write('origin %s %s %s\n' % (self.xaxis[0], self.yaxis[0], self.zaxis[0]))
         newfile.write('delta %s 0 0\n' % self.dx)
         newfile.write('delta 0 %s 0\n' % self.dy)
         newfile.write('delta 0 0 %s\n' % self.dz)
-        newfile.write('object 2 class gridconnections counts %s %s %s\n' %
-(freq.shape[0], freq.shape[1], freq.shape[2]))
-        newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (freq.shape[0]*freq.shape[1]*freq.shape[2]))
-        intergrid=numpy.zeros((freq.shape[0], freq.shape[1], freq.shape[2]))
+        newfile.write('object 2 class gridconnections counts %s %s %s\n' % (reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
+        newfile.write('object 3 class array type double rank 0 items %s data follows\n' % (reshape_freq.shape[0]*reshape_freq.shape[1]*reshape_freq.shape[2]))
+        intergrid=numpy.zeros((reshape_freq.shape[0], reshape_freq.shape[1], reshape_freq.shape[2]))
         count=0
-        for i in range(0, freq.shape[0]):
-            for j in range(0, freq.shape[1]):
-                for k in range(0, freq.shape[2]):
+        for i in range(0, reshape_freq.shape[0]):
+            for j in range(0, reshape_freq.shape[1]):
+                for k in range(0, reshape_freq.shape[2]):
                     if count==2:
-                        if freq[i][j][k]==0:
-                            newfile.write('%s\n' % int(freq[i][j][k]))
+                        if reshape_freq[i][j][k]==0:
+                            newfile.write('%s\n' % int(reshape_freq[i][j][k]))
                         else:
-                            newfile.write('%s\n' % freq[i][j][k])
+                            newfile.write('%s\n' % reshape_freq[i][j][k])
                         count=0
                     else:
-                        if freq[i][j][k]==0:
-                            newfile.write('%s\t' % int(freq[i][j][k]))
+                        if reshape_freq[i][j][k]==0:
+                            newfile.write('%s\t' % int(reshape_freq[i][j][k]))
                         else:
-                            newfile.write('%s\t' % freq[i][j][k])
+                            newfile.write('%s\t' % reshape_freq[i][j][k])
                         count+=1
         newfile.write('\nobject "ligand free energy" class field')
         newfile.close()
-
 

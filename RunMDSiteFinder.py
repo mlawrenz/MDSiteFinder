@@ -23,7 +23,7 @@ at default 0.5 Angstrom gridspace.
 This file can be loaded into VMD:
 * you can run the command: vmd -pdb reference.pdb -dx SiteFrequency.dx
 * make a new representation in Isosurface, and scale the isovalues ranging from
-* % opened, from 0 to 1.
+*  opened, from 0 to 1.
 If your 3D surface is not centered on your protein, check that your trajectory
 is aligned to the reference structure.
 
@@ -32,7 +32,6 @@ is aligned to the reference structure.
 def main(pocketdir, trajfile, topo, outname, writedx=True):
     # load traj
     resolution=0.5
-    pad=7.0
     dir=os.path.dirname(trajfile)
     print "REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)"
     # check if you already ran the calc, load framelog if so
@@ -43,16 +42,16 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
             indices.append(i.index)
     newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
     print "getting protein grid size from trajectory"
-    x_range, y_range, z_range, box_volume=Site3D.protein_grid(newcoors, pad=3.0, resolution=0.5)
+    x_range, y_range, z_range, box_volume=Site3D.protein_grid(newcoors, resolution=0.5)
     total_frames=newcoors.shape[0]
     # get pocket spheres, map to grid
     # print "REQUIRES NO HEADER OR FOOTER IN PDB FILE"
-    framedata=Site3D.parse_all_pocket_files(pocketdir, resolution)
+    pocketdata=Site3D.parse_all_pocket_files(pocketdir, resolution)
     space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
     #get freq
     print "getting tally"
     start=float(time.time())
-    framelog=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    framelog=space.map_sphere_occupancy_grid(pocketdata, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
@@ -70,7 +69,8 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
         if frames.size:
             space.write_pdb(outfile, frames)
     if writedx==True:
-        space.write_dx(dir, outname)
+        outfile='%s/%s_sitefrequency.dx' % (dir, outname)
+        space.write_dx(outfile)
 
 def parse_commandline():
     parser = optparse.OptionParser()
