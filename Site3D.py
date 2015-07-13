@@ -136,32 +136,18 @@ class Site3D:
         # all coor is all protein coors
         # loop over all grid points
         # save frameoccupancies
+        alloccup=numpy.zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
         init=0
         for frame in xrange(len(framedata.keys())):
-            frameoccup=numpy.ones((self.pocketgrid.shape[0]))
+            frameoccup=numpy.zeros((len(self.xaxis), len(self.yaxis), len(self.zaxis)))
             for i in framedata[frame]:
-                index=numpy.where(self.pocketgrid[:0] < i[0]
-            distances=sp.distance.cdist(self.pocketgrid, framedata[frame])
-            # array of gridpoint index, protein coor
-            # shape of occupied is gridpoint, protein atom close
-            # count gridpoints with at least 1 protein atom close
-            occupied=numpy.where(distances< cutoff)
-            unique_occupied=numpy.unique(occupied[0]) 
-            frameoccup[unique_occupied]=0
-            check_solvated=numpy.where(distances<5.0)
-            ref=numpy.arange(0, distances.shape[0])
-            unique_solvated=numpy.unique(check_solvated[0])
-            solvated_inds=numpy.setdiff1d(ref, unique_solvated) 
-            frameoccup[solvated_inds]=0
-            self.pocketoccup+=frameoccup
-            if init==0:
-                framelog=frameoccup
-                init+=1
-            else:
-                framelog=numpy.vstack((framelog, frameoccup))
-            # turn off check solvated search, can do visualization post
-            # processing
-        return framelog
+                x_location=numpy.where((self.xaxis>=i[0])&(self.xaxis< i[0]+self.dx))[0]
+                y_location=numpy.where((self.yaxis>=i[1])&(self.yaxis< i[1]+self.dy))[0]
+                z_location=numpy.where((self.zaxis>=i[2])&(self.zaxis< i[2]+self.dz))[0]
+                frameoccup[x_location, y_location, z_location]=1
+            #distances=sp.distance.cdist(self.pocketgrid, framedata[frame])
+            alloccup+=frameoccup
+        return alloccup
 
 
     def write_pdb(self, dir, outname, frequency_indices, freq_val, buffer=1.0):

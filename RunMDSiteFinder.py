@@ -52,14 +52,14 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
     framedata=Site3D.parse_all_pocket_files(pocketdir, resolution)
     space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range)
     #get freq
-    import pdb
-    pdb.set_trace()
     print "getting tally"
     start=float(time.time())
     framelog=space.map_sphere_occupancy_grid(framedata, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
+    import pdb
+    pdb.set_trace()
     start=float(time.time())
     numpy.savetxt('%s/%s_framelog_matrix.dat' % (dir, outname), framelog)
     end=float(time.time())
