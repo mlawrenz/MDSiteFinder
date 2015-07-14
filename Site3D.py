@@ -82,7 +82,6 @@ class Site3D:
         X,Y,Z=numpy.meshgrid(self.xaxis,self.yaxis,self.zaxis)
         self.pocketgrid=numpy.vstack((X.ravel(), Y.ravel(), Z.ravel())).T
         self.pocketoccup=numpy.zeros((self.pocketgrid.shape[0]))
-        #self.reduced_coors=reduced_coors
 
     def map_sphere_occupancy_grid(self, pocketdata, cutoff=3.0, pad=None):
         # pocketdata has spheres n with center and radii
