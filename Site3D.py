@@ -97,6 +97,8 @@ def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
         for frame in xrange(allcoor.shape[0]):
             for n in range(0,3):
                 new=allcoor[frame][abs(allcoor[frame][:,n]-pocket_data[sphere]['center'][n]) < pocket_data[sphere]['radius']]    
+                if not new.size:
+                    continue
                 if min(new[:,n]) < mins[n]:
                     mins[n]=min(new[:,n])
                 elif max(new[:,n]) > maxes[n]:
@@ -208,7 +210,7 @@ class Site3D:
         reshape_freq=numpy.zeros((len(self.xaxis), len(self.yaxis),len(self.zaxis)))
         count=0
         for j in range(0, len(self.yaxis)):
-            for i in range(0, len(self.zaxis)):
+            for i in range(0, len(self.xaxis)):
                 for k in range(0, len(self.zaxis)):
                     reshape_freq[i,j,k]=self.pocketoccup[count]/self.total_frames
                     count+=1
