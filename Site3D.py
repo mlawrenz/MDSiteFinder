@@ -166,14 +166,15 @@ class Site3D:
             solvated_inds=numpy.setdiff1d(ref, unique_solvated) 
             frameoccup[solvated_inds]=0
             self.pocketoccup+=frameoccup
-            if init==0:
-                framelog=frameoccup
-                init+=1
-            else:
-                framelog=numpy.vstack((framelog, frameoccup))
+            # logging frames this way too slow
+            #if init==0:
+            #    framelog=frameoccup
+            #    init+=1
+            #else:
+            #    framelog=numpy.vstack((framelog, frameoccup))
             # turn off check solvated search, can do visualization post
             # processing
-        return framelog
+        return
 
 
     def write_pdb(self, dir, outname, frequency_indices, freq_val, buffer=1.0):
