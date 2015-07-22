@@ -44,6 +44,8 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
     print "getting protein grid size from trajectory"
     x_range, y_range, z_range, box_volume=Site3D.protein_grid(newcoors, resolution=0.5)
     total_frames=newcoors.shape[0]
+    del traj
+    del newcoors
     # get pocket spheres, map to grid
     # print "REQUIRES NO HEADER OR FOOTER IN PDB FILE"
     pocketdata=Site3D.parse_all_pocket_files(pocketdir, resolution)
