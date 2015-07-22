@@ -1,0 +1,2 @@
+/common/compchem/mlawrenz/anaconda/lib/python2.7/site-packages/mdtraj-1.4.2-py2.7-linux-x86_64.egg/mdtraj/core/trajectory.py:396: UserWarning: top= kwarg ignored since file contains topology information
+  warnings.warn('top= kwarg ignored since file contains topology information')

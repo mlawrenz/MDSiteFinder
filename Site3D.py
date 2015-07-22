@@ -94,12 +94,12 @@ class Site3D:
                 frames=numpy.where(distances[:,index] < pocketdata[frame]['radii'][index])[0]
                 frameoccup[frames]=1
             self.pocketoccup+=frameoccup
-            if init==0:
-                framelog=frameoccup
-                init+=1
-            else:
-                framelog=numpy.vstack((framelog, frameoccup))
-        return framelog
+            #if init==0:
+            #    framelog=frameoccup
+            #    init+=1
+            #else:
+            #    framelog=numpy.vstack((framelog, frameoccup))
+        return 
 
     def write_pdb(self, outfile, frequency_indices):
         count=0
