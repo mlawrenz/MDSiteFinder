@@ -38,6 +38,7 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     dir=os.path.dirname(trajfile)
     print "REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)"
     # check if you already ran the calc, load framelog if so
+    start=float(time.time())
     traj=mdtraj.load(trajfile, top=topo)
     indices=[]
     for i in traj.topology.atoms:
@@ -49,6 +50,11 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
     print "getting min max"
     reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
+    end=float(time.time())
+    elapse=end-start
+    print "loaded traj and got pocket size %0.4f sec" % elapse
+    import pdb  
+    pdb.set_trace()
     space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
     #get freq
     print "getting tally"
