@@ -50,7 +50,25 @@ def pocket_sphere_coors(radius, center, resolution):
     return sphere_cart_coors     
             
 
-def parse_pocket_file(pocket_file, resolution=0.5):
+def get_min_max(newcoors, pad=8.0, resolution=0.5):
+    maxes=dict()
+    mins=dict()
+    for n in range(0,3):
+        mins[n]=numpy.min(newcoors[:,n].flatten())
+        maxes[n]=numpy.max(newcoors[:,n].flatten())
+    lengths=dict()
+    for n in range(0,3):
+        maxes[n]=maxes[n]+pad
+        mins[n]=mins[n]-pad
+        lengths[n]=int(((round(maxes[n]))-round(mins[n])))
+    box_volume=lengths[0]*lengths[1]*lengths[2]
+    ranges=dict()
+    for n in range(0,3):
+        ranges[n]=numpy.arange(int(round(mins[n])), int(round(maxes[n])), resolution)
+    return ranges[0], ranges[1], ranges[2], box_volume
+    
+
+def get_min_max_from_pocket_file(pocket_file, pad, resolution=0.5):
     pocket_data=dict()
     fhandle=open(pocket_file)
     n=0
@@ -75,11 +93,17 @@ def parse_pocket_file(pocket_file, resolution=0.5):
         #occupancy=line[67:70]
         #beta=line[54:59]
         radius=float(beta)
-        center=(xcoor, ycoor, zcoor)
-        pocket_data[n]['center']=center
-        pocket_data[n]['radius']=radius
-        n+=1
-    return pocket_data
+        center=numpy.array([xcoor, ycoor, zcoor])
+        if n==0:
+            pocket_centers=center
+            pocket_radii=[]
+            pocket_radii.append(radius)
+            n+=1
+        else:
+            pocket_centers=numpy.vstack((pocket_centers, center))
+            pocket_radii.append(radius)
+    xrange, yrange, zrange, box_volume=get_min_max(pocket_centers, pad=8.0, resolution=0.5)
+    return xrange, yrange, zrange, box_volume
 
 
 def get_pocket_minmax(pocket_data, allcoor, pad=3.0, resolution=0.5):
@@ -151,9 +175,14 @@ class Site3D:
         # loop over all grid points
         # save frameoccupancies
         init=0
-        for frame in xrange(len(self.reduced_coors.keys())):
+        for frame in xrange(self.reduced_coors.shape[0]):
             frameoccup=numpy.ones((self.pocketgrid.shape[0]))
+            import time
+            start=time.time()
             distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
+            end=time.time()
+            elapse=end-start
+            print "distance compute %s" % elapse
             # array of gridpoint index, protein coor
             # shape of occupied is gridpoint, protein atom close
             # count gridpoints with at least 1 protein atom close

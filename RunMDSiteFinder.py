@@ -34,7 +34,7 @@ is aligned to the reference structure.
 def main(pocketfile, trajfile, topo, outname, writedx=True):
     # load traj
     resolution=0.5
-    pad=7.0
+    pad=8.0
     dir=os.path.dirname(trajfile)
     print "REMOVING HYDROGENS FROM CALC (REFLECTS CUTOFF)"
     # check if you already ran the calc, load framelog if so
@@ -46,30 +46,21 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
             indices.append(i.index)
     newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
     total_frames=newcoors.shape[0]
-    # get pocket spheres, map to grid
-    pocket_data=Site3D.parse_pocket_file(pocketfile, resolution)
-    print "getting min max"
-    reduced_coors, x_range, y_range, z_range, box_volume=Site3D.get_pocket_minmax(pocket_data, newcoors, pad=pad, resolution=resolution)
+    x_range, y_range, z_range, box_volume=Site3D.get_min_max_from_pocket_file(pocketfile, pad, resolution=0.5)
+    print "pocket box volume %s angstroms^3" % box_volume
     end=float(time.time())
     elapse=end-start
     print "loaded traj and got pocket size %0.4f sec" % elapse
-    import pdb  
-    pdb.set_trace()
-    space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=reduced_coors)
-    #get freq
+    space=Site3D.Site3D(total_frames, resolution=resolution, xaxis=x_range, yaxis=y_range, zaxis=z_range, reduced_coors=newcoors)
     print "getting tally"
     start=float(time.time())
-    #framelog=space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
-    space.map_sphere_occupancy_grid(pocket_data, cutoff=3.0)
+    space.map_sphere_occupancy_grid(newcoors, cutoff=3.0)
     end=float(time.time())
     elapse=end-start
     print "tallied all frames and gridpoint %0.4f sec" % elapse
     start=float(time.time())
-    #numpy.savetxt('%s/%s_framelog_matrix.dat' % (dir, outname), framelog)
     end=float(time.time())
     elapse=end-start
-    #print "saved frametally %0.4f sec" % elapse
-    # work with gridpoints directly if only writing PDBs
     freq=space.pocketoccup/total_frames
     freq=numpy.round(freq, decimals=1) 
     for f in numpy.arange(0, 1.1, 0.1):
