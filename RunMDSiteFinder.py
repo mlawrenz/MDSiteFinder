@@ -63,7 +63,7 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     elapse=end-start
     freq=space.pocketoccup/total_frames
     freq=numpy.round(freq, decimals=1) 
-    for f in numpy.arange(0, 1.1, 0.1):
+    for f in numpy.arange(0, 1.05, 0.05):
         frames=numpy.where(freq==f)[0]
         if frames.size:
             space.write_pdb(dir, outname, frames, f)

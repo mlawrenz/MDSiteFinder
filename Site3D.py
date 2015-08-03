@@ -177,12 +177,7 @@ class Site3D:
         init=0
         for frame in xrange(self.reduced_coors.shape[0]):
             frameoccup=numpy.ones((self.pocketgrid.shape[0]))
-            import time
-            start=time.time()
             distances=sp.distance.cdist(self.pocketgrid, self.reduced_coors[frame])
-            end=time.time()
-            elapse=end-start
-            print "distance compute %s" % elapse
             # array of gridpoint index, protein coor
             # shape of occupied is gridpoint, protein atom close
             # count gridpoints with at least 1 protein atom close
