@@ -36,9 +36,9 @@ is aligned to the reference structure.
 """
 
 def main(pocketfile, trajfile, topo, outname, writedx=True):
-    xcoors=numpy.loadtxt(pocketfile, usecols=(6,), ndmin=1)
-    ycoors=numpy.loadtxt(pocketfile, usecols=(7,), ndmin=1)
-    zcoors=numpy.loadtxt(pocketfile, usecols=(8,), ndmin=1)
+    xcoors=numpy.loadtxt(pocketfile, usecols=(5,), ndmin=1)
+    ycoors=numpy.loadtxt(pocketfile, usecols=(6,), ndmin=1)
+    zcoors=numpy.loadtxt(pocketfile, usecols=(7,), ndmin=1)
     xcoors=xcoors.reshape(-1,1)
     ycoors=ycoors.reshape(-1,1)
     zcoors=zcoors.reshape(-1,1)
@@ -58,19 +58,16 @@ def main(pocketfile, trajfile, topo, outname, writedx=True):
     newcoors=10*traj.xyz[:,indices,:] #multiply by 10 bc mdtraj scalers
     cutoff=3.0
     open_frames=dict()
+    count=0
     for frame in xrange(newcoors.shape[0]):
         distances=sp.distance.cdist(opencoors, newcoors[frame])
         open=numpy.where(distances<3.0)[0]
-        # where few protein atoms are nearby
-        open_frames[frame]=open.size
-    target=sorted(open_frames.iteritems(), key=operator.itemgetter(1))
-    for x in range(0,10):
-        tmp_traj=mdtraj.load(topo)
-        (frame, prot)=target[x]
-        print (frame, prot)
-        tmp_traj.xyz=traj.xyz[frame]
-        print "writing frame %s" % frame
-        tmp_traj.save_pdb('rank%s_%s.pdb' % (x, outname))
+        if open.size < 20:
+            print frame, open.size
+        if not open.size:
+            count+=1
+    tally=float(count)/newcoors.shape[0]
+    print "open for %s" % tally
             
 
 def parse_commandline():
