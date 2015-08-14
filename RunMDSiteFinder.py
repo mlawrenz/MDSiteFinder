@@ -65,7 +65,7 @@ def main(pocketdir, trajfile, topo, outname, writedx=True):
     # work with gridpoints directly if only writing PDBs
     freq=space.pocketoccup/total_frames
     freq=numpy.round(freq, decimals=1) 
-    for f in numpy.arange(0, 1.1, 0.1):
+    for f in numpy.arange(0, 1.025, 0.025):
         outfile='%s/open%0.1f_%s.pdb' % (dir, f, outname)
         frames=numpy.where(freq==f)[0]
         print f, frames.size

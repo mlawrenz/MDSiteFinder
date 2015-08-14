@@ -1,500 +1,500 @@
- 1661  ls
- 1662  a_moe
- 1663  cd ../
- 1664  cd Si
- 1665  cd ../SiteTest/
- 1666  ls
- 1667  cd shortmd/
- 1668  ls
- 1669  vi short_open0.2.pdb 
- 1670  cd ../../MDSiteFinder/
- 1671  ls
- 1672  vi RunMDSiteFinder.py 
- 1673  vi Site3D.py
- 1674  vi RunMDSiteFinder.py 
- 1675  vi Site3D.py
- 1676  vi RunMDSiteFinder.py 
- 1677  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1678  vi Site3D.py
- 1679  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1680  vi Site3D.py
- 1681  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1682  vi Site3D.py
- 1683  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1684  vi Site3D.py
- 1685  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1686  vi Site3D.py
- 1687  vi RunMDSiteFinder.py 
- 1688  python RunMDSiteFinder.py -o short_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1689  vi RunMDSiteFinder.py 
- 1690  vi Site3D.py
- 1691  vi RunMDSiteFinder.py 
- 1692  vi Site3D.py
- 1693  vi RunMDSiteFinder.py 
- 1694  vi Site3D.py
- 1695  vi RunMDSiteFinder.py 
- 1696  vi Site3D.py
- 1697  vi RunMDSiteFinder.py 
- 1698  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1699  vi RunMDSiteFinder.py 
- 1700  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1701  vi RunMDSiteFinder.py 
- 1702  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1703  vi RunMDSiteFinder.py 
- 1704  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1705  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1706  vi RunMDSiteFinder.py 
- 1707  vi si
- 1708  vi Site3D.py
- 1709  vi si
- 1710  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1711  vi si
- 1712  vi Site3D.py
- 1713  vi RunMDSiteFinder.py 
- 1714  vi Site3D.py
- 1715  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1716  vi Site3D.py
- 1717  vi RunMDSiteFinder.py 
- 1718  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1719  vi Site3D.py
- 1720  vi RunMDSiteFinder.py 
- 1721  vi Site3D.py
- 1722  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1723  vi Site3D.py
- 1724  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1725  vi Site3D.py
- 1726  vi RunMDSiteFinder.py 
- 1727  vi Site3D.py
- 1728  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1729  cd ../SiteTest/
- 1730  ls
- 1731  ls -l *dx
- 1732  diff single_save_sitefrequency.dx single_speed2_sitefrequency.dx
- 1733  ls *dx
- 1734  ls *pdb
- 1735  diff single_save_open1.0.pdb single_speed2_open1.0.pdb
- 1736  tail -n 1 single_save_open1.0.pdb single_speed2_open1.0.pdb
- 1737  vmd -m single_save_open1.0.pdb single_speed2_open1.0.pdb
- 1738  cd ../MDSiteFinder/q
- 1739  cd ../MDSiteFinder/
- 1740  git add *
- 1741  git commit -m "big change, add framelog to can get PDBs later, and change way print freq PDBs"
- 1742  git branch
- 1743  git log
- 1744  git checkout ca4f319d7f227946b2366f37d04a537cf6325d7a
- 1745  python RunMDSiteFinder.py -o single_checksave -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1746  git checkout master
- 1747  git add *
- 1748  git commit -m "checking previous working speedy version without solvation"
- 1749  git checkout master
- 1750  vi RunMDSiteFinder.py 
- 1751  python RunMDSiteFinder.py -o single_save -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1752  cd ../SiteTest/
- 1753  ls *dx
- 1754  diff single_checksave_sitefrequency.dx single_save_sitefrequency.dx
- 1755  ls *pdb
- 1756  diff single_save_open0.0.pdb single_checksave_open0.0.pdb
- 1757  vmd -m single_save_open0.0.pdb single_checksave_open0.0.pdb
- 1758  vmd -m single_save_open1.0.pdb single_checksave_open1.0.pdb
- 1759  cd ../MDSiteFinder/
- 1760  ls
- 1761  git add *
- 1762  git commit -m "checked bg change, working"
- 1763  ls
- 1764  rm allcmd_speed2.out 
- 1765  ls
- 1766  top
- 1767  ls
- 1768  rm si
- 1769  ls
- 1770  top
- 1771  git log
- 1772  git checkout 09f0653256b7f5d29712fc03994e1ba85013a235
- 1773  ls
- 1774  ls *out
- 1775  git checkout c4a54b639c9abe803d3454fcc461f0dd1de9f8ea
- 1776  ls
- 1777  git status
- 1778  git add *
- 1779  git commit "looking for outfile"
- 1780  git commit -m "looking for outfile"
- 1781  git checkout master
- 1782  ls
- 1783  top
- 1784  pwd
- 1785  ls ../
- 1786  cd ../
- 1787  ls
- 1788  cd Mcl-1/
- 1789  ls
- 1790  cd analysis/
- 1791  ls
- 1792  cd trajs/
- 1793  ls
- 1794  ls *spped2*
- 1795  ls *speed2*
- 1796  ls -l *speed2*
- 1797  rm cmd_fpocket_site*
- 1798  ls
- 1799  rm cmd_site*
- 1800  ls
- 1801  rm moe_res1.0_site*
- 1802  ls
- 1803  vmd -m ../aln-apo.pdb allcmd_speed2_*pdb
- 1804  ls
- 1805  pymol
- 1806  cd ../../
- 1807  cd ../MDSiteFinder/
- 1808  ls
- 1809  python RunMDSiteFinder.py -o single_buffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1810  vi Site3D.py
- 1811  python RunMDSiteFinder.py -o single_buffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1812  cd ../SiteTest/
- 1813  ls *1.0*
- 1814  vmd -m single_buffer_open1.0.pdb single_save_open1.0.pdb 
- 1815  ls
- 1816  cd ../MDSiteFinder/
- 1817  ls
- 1818  git add *
- 1819  git commit -m "enable remove buffer from PDb sphere files for edge"
- 1820  git branch
- 1821  python RunMDSiteFinder.py -o short_buffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1822  cd ../SiteTest/
- 1823  cd shortmd/
- 1824  ls
- 1825  vmd -m ../aln-apo.pdb short_speed2_open0.2.pdb short_buffer_open0.2.pdb 
- 1826  cd ../
- 1827  cd ../
- 1828  cd Mcl-1/analysis/trajs/
- 1829  ls
- 1830  ls *pse
- 1831  pymol allcmd_analyze.pse 
- 1832  ls
- 1833  pymol allcmd_analyze.pse 
- 1834  pwd
- 1835  cd ../../
- 1836  cd ../MDSiteFinder/
- 1837  ls
- 1838  vi Site3D.py
- 1839  vi RunMDSiteFinder.py 
- 1840  vi Site3D.py
- 1841  vi Site3D.py
- 1842  python RunMDSiteFinder.py -o short_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1843  vi Site3D.py
- 1844  python RunMDSiteFinder.py -o short_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1845  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1846  vmd -m ../SiteTest/aln-apo.pdb ../SiteTest/single_newbuffer_open1.0.pdb 
- 1847  python RunMDSiteFinder.py -o short_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1848  cd ../SiteTest/
- 1849  ls
- 1850  cd shortmd/
- 1851  ls
- 1852  vmd -m ../aln-apo.pdb ../aln-holo-with-ligand.pdb short_newbuffer_*pdb
- 1853  cd ../../MDSiteFinder/
- 1854  vi Site3D.py
- 1855  python RunMDSiteFinder.py -o short_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1856  cd ../SiteTest/shortmd/
- 1857  vmd -m ../aln-apo.pdb ../aln-holo-with-ligand.pdb short_newbuffer_*pdb
- 1858  vmd -m ../aln-apo.pdb ../aln-holo-with-ligand.pdb short_newbuffer_*pdb
- 1859  cd ..
- 1860  ls *pdb
- 1861  vmd -m single_newbuffer_open0.0.pdb single_newbuffer_open1.0.pdb
- 1862  cd ../MDSiteFinder/
- 1863  ls
- 1864  vi Site3D.py
- 1865  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1866  cd ../SiteTest/
- 1867  ls
- 1868  vmd -m single_newbuffer_*pdb
- 1869  cd ../MDSiteFinder/
- 1870  vi RunMDSiteFinder.py 
- 1871  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1872  vi RunMDSiteFinder.py 
- 1873  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1874  vi Site3D.py
- 1875  vi Site3D.py
- 1876  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1877  vmd -m ../SiteTest/single_newbuffer_*pdb
- 1878  vi Site3D.py
- 1879  vi Site3D.py
- 1880  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1881  vmd -m ../SiteTest/single_newbuffer_*pdb
- 1882  vi Site3D.py
- 1883  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1884  vmd -m ../SiteTest/single_newbuffer_*pdb
- 1885  vi Site3D.py
- 1886  vi RunMDSiteFinder.py 
- 1887  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1888  vmd -m ../SiteTest/single_newbuffer_*pdb
- 1889  ls ../SiteTest/
- 1890  vmd -m ../SiteTest/single_checksave_open*.pdb 
- 1891  vmd -m ../SiteTest/single_save_open*.pdb 
- 1892  vi Site3D.py
- 1893  vi RunMDSiteFinder.py 
- 1894  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1895  wc-l ../SiteTest/single_newbuffer_open0.0.pdb 
- 1896  wc -l ../SiteTest/single_newbuffer_open0.0.pdb 
- 1897  vmd ../SiteTest/single_newbuffer_open0.0.pdb 
- 1898  vi ../SiteTest/single_newbuffer_open0.0.pdb 
- 1899  vi ../SiteTest/single_newbuffer_open0.0.pdb 
- 1900  vi RunMDSiteFinder.py 
- 1901  vi Site3D.py
- 1902  ipython
- 1903  vi Site3D.py
- 1904  ipython
- 1905  vi Site3D.py
- 1906  vi RunMDSiteFinder.py 
- 1907  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1908  vi Site3D.py
- 1909  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1910  vi Site3D.py
- 1911  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1912  vi Site3D.py
- 1913  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1914  vmd ../SiteTest/single_newbuffer_open0.0.pdb 
- 1915  vi Site3D.py
- 1916  head ../SiteTest/single_newbuffer_open0.0.pdb 
- 1917  head ../SiteTest/single_newbuffer_open1.0.pdb 
- 1918  tail ../SiteTest/single_newbuffer_open1.0.pdb 
- 1919  tail ../SiteTest/aln-apo.pdb 
- 1920  vi Site3D.py
- 1921  vi Site3D.py
- 1922  :u
- 1923  vi Site3D.py
- 1924  ipython
- 1925  vi Site3D.py
- 1926  python RunMDSiteFinder.py -o single_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1927  vmd ../SiteTest/single_newbuffer_open0.0.pdb 
- 1928  ls
- 1929  git add *
- 1930  git commit -m "fixed bug in writing dummy resid names"
- 1931  python RunMDSiteFinder.py -o short_newbuffer -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1932  python RunMDSiteFinder.py -o short_newbuff -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1933  vi RunMDSiteFinder.py 
- 1934  python RunMDSiteFinder.py -o short_newbuff -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1935  vi Site3D.py
- 1936  cd ../SiteTest/shortmd/
- 1937  ls
- 1938  rm *newbuffer*pdb
- 1939  ls
- 1940  pymol
- 1941  cd ../MD
- 1942  cd ../../MDSiteFinder/
- 1943  python RunMDSiteFinder.py -o single_newbuff -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1944  cd ../SiteTest/
- 1945  ls
- 1946  rm single_newbuffer_*
- 1947  vmd single_newbuff_open*pdb
- 1948  vi single_newbuff_open1.0.pdb
- 1949  head single_newbuff_open1.0.pdb
- 1950  head single_newbuff_open0.0.pdb
- 1951  tail single_newbuff_open0.0.pdb
- 1952  tail single_newbuff_open1.0.pdb
- 1953  vmd single_newbuff_open1.0.pdb
- 1954  vmd -m single_newbuff_open*pdb
- 1955  ls
- 1956  ls *buffer*
- 1957  cd shortmd/
- 1958  ls
- 1959  pymol
- 1960  ls *newbuff*
- 1961  ls *newbuff*pdb
- 1962  for file in `ls *newbuff*pdb`; do echo newbuff_${file##*buff_}; done
- 1963  for file in `ls *newbuff*pdb`; do echo ${file##*buff_}_short_newbuff; done
- 1964  cd ../../MDSiteFinder/
- 1965  ls
- 1966  vi Site3D.py
- 1967  python RunMDSiteFinder.py -o single_newbuff -y ../SiteTest/aln-apo.pdb -t ../SiteTest/aln-apo.pdb -p ../SiteTest/moe_apo_site3.pdb
- 1968  python RunMDSiteFinder.py -o short_newbuff -y ../SiteTest/aln-apo.pdb -t ../SiteTest/shortmd/short.dcd -p ../SiteTest/moe_apo_site3.pdb
- 1969  cd ../SiteTest/shortmd/
- 1970  ls
- 1971  pymol
- 1972  pwd
- 1973  s
- 1974  ls
- 1975  rm *buffer*
- 1976  ls
- 1977  ls short*open*pdb
- 1978  ls short*buff*open*pdb
- 1979  rm short*buff*open*pdb
- 1980  ls
- 1981  cd ../
- 1982  cd ../MDSiteFinder/
- 1983  ls
- 1984  git add *
- 1985  git commit -m "working for gridpoints, about to change for alpha spheres"
- 1986  ls
- 1987  bit branch
- 1988  git branch
- 1989  git branch -d inverse
- 1990  git checkout -b newspheres
- 1991  cd ../SiteTest/
- 1992  ls
- 1993  ls
- 1994  mv single* singleframe/
- 1995  ls
- 1996  mv holo_singleframe_* singleframe/
- 1997  ls
- 1998  mkdir multi_alpha
- 1999  ls
- 2000  ls multi_alpha/
- 2001  ls
- 2002  mv open*single* singleframe/
- 2003  ls
- 2004  ls
- 2005  cd ..
- 2006  mv moe_sites_test/ MoeSiteTest
- 2007  cd MoeSiteTest/
- 2008  ls
- 2009  a_moe
- 2010  ls
- 2011  head frame1_site1.pdb 
- 2012  vi frame1_site1.pdb 
- 2013  more commands 
- 2014  vi batch_sitefinder.svl 
- 2015  vi frame1_sites.pdb 
- 2016  ls
- 2017  rm frame1_site1.pdb 
- 2018  ls
- 2019  cd ../MDSiteFinder/
- 2020  git branch
- 2021  vi RunMDSiteFinder.py 
- 2022  vi Site3D.py
- 2023  ls ../MOE\ 
- 2024  cd ..
- 2025  ls
- 2026  ls MoeSiteTest/
- 2027  ls
- 2028  cd MoeSiteTest/
- 2029  ls
- 2030  ls frame
- 2031  mkdir frame_alphas
- 2032  mv frame*sites.pdb frame_alphas/
- 2033  ls frame_alphas/
- 2034  cd frame_alphas/
- 2035  ls
- 2036  head *pdb
- 2037  tail *pdb
- 2038  ipython
- 2039  cd ../../MDSiteFinder/
- 2040  ls ../MoeSiteTest/frame_alphas/
- 2041  vi Site3D.py
- 2042  vi RunMDSiteFinder.py 
- 2043  vi Site3D.py
- 2044  cd ../MoeSiteTest/frame_alphas/
- 2045  ls
- 2046  sed "$d" < frame10_sites.pdb 
- 2047  sed "$ d" < frame10_sites.pdb 
- 2048  sed 1,3d" < frame10_sites.pdb  | head
- 2049  sed "1,3d" < frame10_sites.pdb  | head
- 2050  for file in `ls *pdb`; do sed -i "$ d" $file; sed "1,3d" $file; done
- 2051  ls
- 2052  tail *pdb
- 2053  head *pdb
- 2054  for file in `ls *pdb`; do sed -i "1,3d" $file; done
- 2055  head *pdb
- 2056  cd ../../
- 2057  ls
- 2058  cd MDSiteFinder/
- 2059  ls
- 2060  vi Site3D.py
- 2061  vi RunMDSiteFinder.py 
- 2062  vi Site3D.py
- 2063  vi Site3D.py
- 2064  ipython
- 2065  vi Site3D.py
- 2066  python RunMDSiteFinder.py -h
- 2067  cp ../SiteTest/aln-apo.pdb ../MoeSiteTest/
- 2068  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/
- 2069  vi Site3D.py
- 2070  python -m pdb RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/
- 2071  vi Site3D.py
- 2072  python  RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/
- 2073  ls
- 2074  git add *
- 2075  python -m pdb  RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/
- 2076  mv ../MoeSiteTest/frame_alphas/frame1_sites.pdb ../MoeSiteTest/frame_alphas/frame01_sites.pdb
- 2077  vi Site3D.py
- 2078  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/
- 2079  git add *
- 2080  git commit -m "just added parser of files in frames_alpha dir, watch out for file numbering and formatting of PDB"
- 2081  ls
- 2082  git checkout master
- 2083  git push origin master
- 2084  git push origin master
- 2085  git branch
- 2086  git checkout newspheres
- 2087  ls
- 2088  vi RunMDSiteFinder.py 
- 2089  python RunMDSiteFinder.py -h
- 2090  ls
- 2091  ls ../MoeSiteTest/
- 2092  ls ../MoeSiteTest/frame_alphas/
- 2093  cd ../MoeSiteTest/
- 2094  ls
- 2095  ls frame_alphas/
- 2096  cd frame_alphas/
- 2097  catdcd -h
- 2098  catdcd -o frame_sites.dcd -otype dcd -pdb frame01_sites.pdb frame10_sites.pdb frame20_sites.pdb frame30_sites.pdb frame40_sites.pdb frame50_sites.pdb
- 2099  cd ..
- 2100  ls
- 2101  ls *mdb
- 2102  a_moe
- 2103  ls
- 2104  vi frame01.pdb 
- 2105  vi frame10.pdb 
- 2106  vi frame20.pdb 
- 2107  vi frame30.pdb 
- 2108  vi frame40.pdb 
- 2109  vi frame50.pdb 
- 2110  ls
- 2111  catdcd -o frame_sites.dcd -otype dcd -pdb frame01.pdb frame10.pdb frame20.pdb frame30.pdb frame40.pdb frame50.pdb
- 2112  ls *dcd
- 2113  cd ../MDSiteFinder/
- 2114  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2115  a_moe
- 2116  vi Site3D.py
- 2117  vi RunMDSiteFinder.py 
- 2118  vi Site3D.py
- 2119  vi RunMDSiteFinder.py 
- 2120  vi RunMDSiteFinder.py 
- 2121  vi Site3D.py
- 2122  ls
- 2123  vi sphere_distance_3D.py 
- 2124  vi Site3D.py
- 2125  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2126  vi Site3D.py
- 2127  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2128  vi run-sitemap.sh 
- 2129  vi RunMDSiteFinder.py 
- 2130  vi run-sitemap.sh 
- 2131  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2132  python -m pdb RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2133  vi Site3D.py
- 2134  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2135  vi Site3D.py
- 2136  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2137  vi Site3D.py
- 2138  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2139  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2140  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2141  vi Site3D.py
- 2142  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2143  vi Site3D.py
- 2144  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2145  vi Site3D.py
- 2146  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2147  vi Site3D.py
- 2148  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2149  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2150  vi Site3D.py
- 2151  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2152  vi Site3D.py
- 2153  vi Site3D.py
- 2154  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2155  vi Site3D.py
- 2156  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2157  vi Site3D.py
- 2158  python RunMDSiteFinder.py -o test -y ../MoeSiteTest/aln-apo.pdb -p ../MoeSiteTest/frame_alphas/ -t ../MoeSiteTest/frame_sites.dcd 
- 2159  vi Site3D.py
- 2160  history > tmp
+  572  ls longcmd_step100_pockets/*mae*z | wc -l
+  573  cd longcmd_step100_pockets/
+  574  for file in `ls *z`; do echo $file; done
+  575  for file in `ls *z`; do  structconvert -imae $file -omae ${file%%.maegz}.mae; done
+  576  ls
+  577  ls *z
+  578  rm *z
+  579  ls *mae | wc -l
+  580  cd ..
+  581  ls
+  582  ls prep_structures/prep_aln-strip-all-1.2micros-cmd-* | wc -l
+  583  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; do
+  584  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; if [ ! -e prep_structures/prep_${file%%.pdb}.mae ]; then echo $file; fi; done
+  585  ls prep_structures/*60001*
+  586  echo prep_structures/prep_${file%%.pdb}.mae
+  587  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; if [ ! -e prep_structures/prep_${base%%.pdb}.mae ]; then echo $file; fi; done
+  588  rm to_do_list 
+  589  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; if [ ! -e prep_structures/prep_${base%%.pdb}.mae ]; then echo $file >> todo_list; fi; done
+  590  more todo_list 
+  591   more run.sh 
+  592  ls todo_list >> run.sh 
+  593  vi run.sh 
+  594  chmod +x run.sh 
+  595  ./run.sh 
+  596  bjobs
+  597  ls
+  598  mv prep*mae prep_structures/
+  599  mv default*out*mae longcmd_step100_pockets/
+  600  ls
+  601  rm default*log
+  602  ls
+  603  rm usto*
+  604  ls longcmd_step100_pockets/*mae | wc -l
+  605  ls prep_structures/prep_aln-* | wc -l
+  606  rm todo_list 
+  607  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; if [ ! -e prep_structures/prep_${base%%.pdb}.mae ]; then echo $file >> todo_list; fi; done
+  608  wc -l todo_list 
+  609  ./run
+  610  ./run.sh 
+  611  bjobs
+  612  ls
+  613  mv default*out*mae longcmd_step100_pockets/
+  614  mv prep*mae prep_structures/
+  615  ls
+  616  rm default*log
+  617  ls
+  618  ls longcmd_step100_pockets/*mae | wc -l
+  619  rm todo_list 
+  620  for file in `ls longcmd_step100/*pdb`; do base=`basename $file`; if [ ! -e prep_structures/prep_${base%%.pdb}.mae ]; then echo $file >> todo_list; fi; done
+  621  wc -l todo_list 
+  622  ./run.sh 
+  623  bjobs
+  624  ls
+  625  mv default*mae longcmd_step100_pockets/
+  626  mv prep*mae prep_structures/
+  627  ls
+  628  rm default*log
+  629  cd longcmd_step100_pockets/
+  630  ls *log | grep -v 6000
+  631  ls *log | grep -v 6000 | xargs rm
+  632  ls
+  633  cd ..
+  634  bjobs
+  635  ls
+  636  bjobs
+  637  bkill 318906
+  638  ls
+  639  cd longcmd_step100_pockets/
+  640  ls
+  641  python parse_pockets.py 
+  642  sch_python parse_pockets.py 
+  643  vi parse_pockets.py 
+  644  vi list
+  645  awk '{print $1}' < list 
+  646  vi list 
+  647  head list 
+  648  ls default-aln-strip-all-1.2micros-cmd-15301_out.mae
+  649  awk '{print $1}' < list 
+  650  for file in `awk '{print $1}' < list`; do mv $file top_dscore/; done
+  651  ls *mae
+  652  ls
+  653  cd top_dscore/
+  654  ls
+  655  for file in `ls *mae`; do if [ -e ../$file ]; then echo $file
+  656  for file in `ls *mae`; do if [ ! -e ../$file ]; then echo $file; fi; done
+  657  ls ../default-aln-strip-all-1.2micros-cmd-19801_out.mae
+  658  for file in `ls *mae`; do if [ -e ../$file ]; then echo $file; fi; done
+  659  ls
+  660  rm *pdb
+  661  ls
+  662  ls *mae | wc -l
+  663  ls
+  664  ls
+  665  cd ..
+  666  more list 
+  667   cp list  top_dscore/
+  668  cd top_dscore/
+  669  ls
+  670  more list 
+  671   maestro
+  672  ls
+  673  n=1
+  674  for file in list
+  675  for file in `cat list`; do
+  676  for file in `cat list | awk '{print $1}'`; do mv $file rank${n}-$file; let n=($n + 1); done
+  677  ls ../default-aln-strip-all-1.2micros-cmd.mae2301_out.mae
+  678  ls
+  679  maestro
+  680  cp ../parse_pockets.py extract_pockets.py
+  681  vi extract_pockets.py 
+  682  vi ../../sitemaptools.py
+  683  vi extract_pockets.py 
+  684  python extract_pockets.py 
+  685  sch_python extract_pockets.py 
+  686  vi extract_pockets.py 
+  687  sch_python extract_pockets.py 
+  688  vi extract_pockets.py 
+  689  sch_python extract_pockets.py 
+  690  ls
+  691  mv *out.mae ..
+  692  ls
+  693  maestro
+  694  cd ..
+  695  ls
+  696  cd ..
+  697  ls
+  698  mv def-prep_min-amd-holo-rmsd-* default_sitemap/
+  699  cd default_sitemap/
+  700  ls
+  701  maestro
+  702  ls
+  703  cd ..
+  704  ls
+  705  cd longcmd_step100_pockets/
+  706  ls
+  707  cd top_dscore/
+  708  ls *prj
+  709  ls
+  710  cd ..
+  711  ls
+  712  maestro
+  713  cd /molecular_modelling/mlawrenz/
+  714  ls
+  715  ls
+  716  cd MNK1/
+  717  ls
+  718  cd cmd_1/
+  719  ls
+  720  tail prod*out
+  721  tail prod*out
+  722  ls -l prod*out
+  723  tail dens*out
+  724  cd ../cmd_2/
+  725  tail prod*out
+  726  cd ..
+  727  ls
+  728  bc -l
+  729  ls /molecular_modelling/mlawrenz/
+  730  ls /molecular_modelling/mlawrenz/KIF18A/
+  731  ls /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/
+  732  ls /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/apo_cmd1/
+  733  ls /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/apo_cmd1/eq*log
+  734  ls /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/apo_cmd1/eq*out
+  735  tail /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/apo_cmd1/eq*out
+  736  tail -100 /molecular_modelling/mlawrenz/KIF18A/full-length-simulations/apo_cmd1/eq*out
+  737  cd /molecular_modelling/mlawrenz/KIF18A/
+  738  cd full-length-simulations/
+  739  ls
+  740  ls *dcd
+  741  catdcd -num apo-cmd.dcd 
+  742  vi strip.in 
+  743  catdcd -num aln-apo-cmd.dcd 
+  744  vmd -pdb strip-min-apo.pdb
+  745  ls
+  746  pwd
+  747  cd ../../
+  748  cd MNK1/
+  749  ls
+  750  vmd -pdb apo_mnk1.solv.amber.pdb -parm7 apo_mnk1.solv.top 
+  751  ls
+  752  cd cmd_
+  753  cd cmd_1/
+  754  ls
+  755  tail prod*out
+  756  more ../prod-solv.in 
+  757  gpu
+  758  cd ..
+  759  ls cmd_1/prod*mdcrd >> strip.in
+  760  ls cmd_2/prod*mdcrd >> strip.in
+  761  vi strip.in 
+  762  cpptraj apo_mnk1.solv.top strip.in >strip.out &
+  763  ps
+  764  bjobs
+  765  ps
+  766  cpptraj -h
+  767  ps
+  768  pwd
+  769  ls
+  770  mv align_amd.in align.in
+  771  ls strip-apo.dcd >> align.in 
+  772  vi align.in 
+  773  ls
+  774  cp ../Mcl-1/parmstrip .
+  775  vi parmstrip 
+  776  cpptraj apo_mnk1.solv.top parmstrip 
+  777  cp apo_mnk1.solv.amber.pdb aln-apo.pdb
+  778  vi aln-apo.pdb 
+  779  ls
+  780  vi align.in 
+  781  cpptraj strip-apo.top align.in > align.out &
+  782  vi align.in 
+  783  cpptraj strip-apo.top align.in > align.out &
+  784  ls
+  785  ls *dcd
+  786  catdcd -num aln-strip-apo.dcd 
+  787  catdcd -o aln-strip-apo-step10.dcd -otype dcd -stride 10 aln-strip-apo.dcd 
+  788  vmd aln-apo.pdb 
+  789  ls
+  790  ls *dcd
+  791  ls
+  792  compchem
+  793  cd MNK1/
+  794  ls
+  795  ls *pdb
+  796  vi 2AC3.pdb 
+  797  vmd 2AC3.pdb 
+  798  vmd 2AC3.pdb 
+  799  ls
+  800  ls *dcd
+  801  ls
+  802  mkdir cmd_frames
+  803  ls ../Mcl-1/analysis/
+  804  ls ../Mcl-1/analysis/trajs/
+  805  ls ../Mcl-1/analysis/trajs/*in
+  806  cp ../Mcl-1/analysis/trajs/writeframes.sh .
+  807  cp ../Mcl-1/analysis/trajs/ptraj-frame.in .
+  808  vi ptraj-frame.in 
+  809  vi writeframes.sh 
+  810  head writeframes.sh 
+  811  cp /molecular_modelling/mlawrenz/MNK1/aln-strip-apo.dcd .
+  812  cp /molecular_modelling/mlawrenz/MNK1/strip-apo.top .
+  813  ./writeframes.sh aln-strip-apo.dcd strip-apo.top 
+  814  ls
+  815  rm aln-strip-apo*pdb
+  816  ls *dcd
+  817  ls /molecular_modelling/mlawrenz/MNK1/*10*dcd
+  818  cp  /molecular_modelling/mlawrenz/MNK1/*10*dcd .
+  819  rm aln-strip-apo.dcd
+  820  ./writeframes.sh aln-strip-apo-step10.dcd  strip-apo.top 
+  821  mv aln*pdb cmd_frames/
+  822  ls
+  823  pwd
+  824  mv cmd_frames/ mnk1_cmd_frames
+  825  ls *dcd
+  826  ls
+  827  ls *pdb
+  828  pwd
+  829  cp /molecular_modelling/mlawrenz/MNK1/aln-apo.pdb .
+  830  vmd aln-apo.pdb 
+  831  vi strip.in
+  832  vi strip-bad-cys.in
+  833  ls *dcd >>strip-bad-cys.in 
+  834  vi strip-bad-cys.in 
+  835  vi strip-bad-cys.in 
+  836  cpptraj strip-apo.top strip-bad-cys.in 
+  837  vi strip-bad-cys.in 
+  838  cpptraj strip-apo.top strip-bad-cys.in 
+  839  vi strip-bad-cys.in 
+  840  cpptraj strip-apo.top strip-bad-cys.in 
+  841  vi nobad-aln-apo.pdb 
+  842  ls strip-bad-cys.in >> parmstrip-bad
+  843  ls /molecular_modelling/mlawrenz/MNK1/parmstrip .
+  844  cp /molecular_modelling/mlawrenz/MNK1/parmstrip .
+  845  ls strip-bad-cys.in >> parmstrip-bad
+  846  cat parmstrip-bad >> parmstrip
+  847  mv parmstrip parmstrip-bad 
+  848  vi parmstrip-bad 
+  849  cat strip-bad-cys.in >> parmstrip-bad
+  850  vi parmstrip-bad 
+  851  cpptraj strip-apo.top parmstrip-bad 
+  852  ls nobad-*dcd
+  853  ls
+  854  rm mnk1_cmd_frames/*
+  855  vmd -pdb nobad-aln-apo.pdb 
+  856  ls
+  857  history . tmp
+  858  history > tmp
+  859  grep catdcd tmp
+  860  head writeframes.sh 
+  861  ./writeframes.sh nobad-aln-strip-apo-step10.dcd nobad-strip-apo.top 
+  862  ls
+  863  mv nobad-* mnk1_cmd_frames/
+  864  ls
+  865  mv mnk1_cmd_frames/ ../MoeSiteTest/
+  866  cd ../MoeSiteTest/
+  867  ls
+  868  vi run-moe-sitefinder.sh 
+  869  cp run-moe-sitefinder.sh  run-moe-sitefinder-mnk1.sh
+  870  vi run-moe-sitefinder-mnk1.sh 
+  871  ls -d mnk1_cmd_frames/ >> run-moe-sitefinder-mnk1.sh 
+  872  vi run-moe-sitefinder-mnk1.sh 
+  873  ./run-moe-sitefinder-mnk1.sh  > run-moe-sitefinder-mnk1.out &
+  874  ps
+  875  ps
+  876  top
+  877  ls
+  878  ls *mdb
+  879  a_moe
+  880  ls
+  881  ls *sh
+  882  ls
+  883  ls *pdb*
+  884  vi save_pdb_files.svl 
+  885  ls *mdb
+  886  vi save_pdb_files.svl 
+  887  more save_pdb_files.svl 
+  888  $MOE/bin/moebatch -exec "run ['save_pdb_files.svl']" -exit
+  889  ls
+  890  mkdir longcmd_step100_r1.4_alphas
+  891  mv aln-strip-all-1.2micros-cmd-*pdb longcmd_step100_r1.4_alphas
+  892  ls
+  893  cd ../MDSiteFinder/
+  894  git branch
+  895  git add *
+  896  git add *py
+  897  git commit -m "about to check in with alpha sphere approach"
+  898  git checkout newspheres
+  899  git add Site3D.py
+  900  git add Site3D.pyc 
+  901  git commit -m "about to check in with alpha sphere approach"
+  902  git checkout newspheres
+  903  git rm tmp
+  904  tm tmp
+  905  rm tmp
+  906  git checkout newspheres
+  907  ls
+  908  python RunMDSiteFinder.py -h
+  909  python RunMDSiteFinder.py -o lowcutoff_alpha -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-strip-all-1.2micros-cmd-step100.dcd =p ../MoeSiteTest/longcmd_step100_r1.4_alphas/ >& lowcutoff_alpha.log &
+  910  ps
+  911  ps
+  912  ps
+  913  more lowcutoff_alpha.log 
+  914  cd ../MoeSiteTest/longcmd_step100_r1.4_alphas/
+  915  ls
+  916  vi aln-strip-all-1.2micros-cmd-22401.pdb
+  917  vi aln-strip-all-1.2micros-cmd-22401.pdb
+  918  for file in `ls -d *pdb`; do sed -i '1,3d' $file; done
+  919  vi aln-strip-all-1.2micros-cmd-22401.pdb
+  920  sed '/END/d' < aln-strip-all-1.2micros-cmd-22401.pdb
+  921  for file in `ls -d *pdb`; do sed -i '/END/d' $file; done
+  922  cd ../../MDSiteFinder/
+  923  python RunMDSiteFinder.py -o lowcutoff_alpha -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-strip-all-1.2micros-cmd-step100.dcd =p ../MoeSiteTest/longcmd_step100_r1.4_alphas/ >& lowcutoff_alpha.log &
+  924  ps
+  925  more lowcutoff_alpha.log 
+  926  python -m pdb RunMDSiteFinder.py -o lowcutoff_alpha -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-strip-all-1.2micros-cmd-step100.dcd =p ../MoeSiteTest/longcmd_step100_r1.4_alphas/
+  927  python RunMDSiteFinder.py -o lowcutoff_alpha -y ../MoeSiteTest/aln-apo.pdb -t ../MoeSiteTest/aln-strip-all-1.2micros-cmd-step100.dcd -p ../MoeSiteTest/longcmd_step100_r1.4_alphas/ >& lowcutoff_alpha.log &
+  928  bjobs
+  929  more lowcutoff_alpha.log 
+  930  cd ../
+  931  cd SchroSiteTest/
+  932  ls
+  933  vi runsitemap.py 
+  934  vi alan_sitemaptools.py 
+  935  vi runsitemap.py 
+  936  cat alan_sitemaptools.py >> runsitemap.py 
+  937  vi runsitemap.py 
+  938  grep store_true ~/SCRIPTS/*py
+  939  vi runsitemap.py 
+  940  grep -A 1  store_true ~/SCRIPTS/*py
+  941  vi runsitemap.py 
+  942  cp runsitemap.py ~/SCRIPTS/
+  943  cp runsitemap.py ~/amgen-scripts/
+  944  vi runsitemap.py 
+  945  ls
+  946  cp ../MoeSiteTest/mnk1_cmd_frames/ .
+  947  cp -r ../MoeSiteTest/mnk1_cmd_frames/ .
+  948  ls mnk1_cmd_frames/
+  949  ls
+  950  vi runsitemap.py 
+  951  cp runsitemap.py mnk1_cmd_frames/
+  952  cd mnk1_cmd_frames/
+  953  ls
+  954  python runsitemap.py -h
+  955  sch_python runsitemap.py -h
+  956  vi runsitemap.py 
+  957  cp ../sitemaptools.py .
+  958  python runsitemap.py -h
+  959  sch_python runsitemap.py -h
+  960  sch_python runsitemap.py -i nobad-aln-strip-apo-step10-181.pdb -m
+  961  mv runsitemap.py ..
+  962  cd ..
+  963  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  964  vi runsitemap.py 
+  965  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  966  ls prep_structures/
+  967  vi runsitemap.py 
+  968  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  969  vi runsitemap.py 
+  970  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  971  ls *181*
+  972  vi runsitemap.py 
+  973  vi runsitemap.py 
+  974  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  975  ls prep_nobad-aln-strip-apo-step10-181.mae 
+  976  vi runsitemap.py 
+  977  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  978  vi runsitemap.py 
+  979  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  980  vi runsitemap.py 
+  981  sch_python runsitemap.py -i mnk1_cmd_frames/nobad-aln-strip-apo-step10-181.pdb -m
+  982  ps
+  983  ps
+  984  ls
+  985  vi ~/.bashrc
+  986  ls
+  987  ps
+  988  top
+  989  ls *mdb
+  990  cd ../MoeSiteTest/
+  991  ls *mdb
+  992  a_moe
+  993  vi save_pdb_files.svl 
+  994  more save_pdb_files.svl 
+  995  $MOE/bin/moebatch -exec "run ['save_pdb_files.svl']" -exit
+  996  mkdir mnk1_cmd_alphas
+  997  mv nobad-aln-*pdb mnk1_cmd_alphas/
+  998  ls
+  999  cd ../MDSiteFinder/
+ 1000  python RunMDSiteFinder.py -h
+ 1001  ls -l *log
+ 1002  pwd
+ 1003  cd ../MNK1/
+ 1004  ls
+ 1005  cd ..
+ 1006  pwd
+ 1007  ls SchroSiteTest/nobad*
+ 1008  ls MoeSiteTest/nobad*
+ 1009  cd SchroSiteTest/
+ 1010  ls
+ 1011  cd ../MoeSiteTest/
+ 1012  ls *dcd
+ 1013  cd ..
+ 1014  find . -name "*nobad*dcd"
+ 1015  cd SchroSiteTest/
+ 1016  ls mnk1_cmd_frames/nobad-*dcd
+ 1017  mv mnk1_cmd_frames/nobad-*dcd ../MNK1/
+ 1018  cd ../
+ 1019  cd MDSiteFinder/
+ 1020  cd ../MoeSiteTest/mnk1_cmd_alphas/
+ 1021  ls
+ 1022  vi nobad-aln-strip-apo-step10-1796.pdb
+ 1023  for file in `ls *pdb`; do sed -i '1,3d' $file; sed '/END/d' $file; done
+ 1024  head *pdb
+ 1025  for file in `ls *pdb`; do test=`grep HEADER $file | awk '{print $1}'`; if [ -z $test ]; then echo $file; fi; done
+ 1026  for file in `ls *pdb`; do test=`grep HEADER $file | awk '{print $1}'`; if [ ! -z $test ]; then sed -i '1,3d' $file; fi; done
+ 1027  for file in `ls *pdb`; do sed -i '/END/d' $file; done
+ 1028  cd ..
+ 1029  cd ../MDSiteFinder/
+ 1030  python RunMDSiteFinder.py -h
+ 1031  cd ../MoeSiteTest/
+ 1032  mv mnk1_cmd_frames/nobad-aln-apo.pdb ../MNK1/
+ 1033  cd ../MDSiteFinder/
+ 1034  python RunMDSiteFinder.py -o mnk1_alphas -y ../MNK1/nobad-aln-apo.pdb -t ../MNK1/nobad-aln-strip-apo-step10.dcd -o ../MoeSiteTest/mnk1_cmd_alphas/ >&  mnk1_alphas.log &
+ 1035  ps
+ 1036  ps
+ 1037  cd ../MoeSiteTest/
+ 1038  ls *mdb
+ 1039  a_moe
+ 1040  cd ../MDSiteFinder/
+ 1041  more lowcutoff_alpha.log 
+ 1042  tail lowcutoff_alpha.log 
+ 1043  vmd -m ../MoeSiteTest/aln-apo.pdb ../MoeSiteTest/open0.1_lowcutoff_alpha.pdb ../MoeSiteTest/open0.2_lowcutoff_alpha.pdb ../MoeSiteTest/open0.4_lowcutoff_alpha.pdb ../MoeSiteTest/open0.5_lowcutoff_alpha.pdb 
+ 1044  vi RunMDSiteFinder.py 
+ 1045  vmd -pdb ../MoeSiteTest/aln-apo.pdb -dx ../MoeSiteTest/lowcutoff_alpha_sitefrequency.dx 
+ 1046  more mnk1_alphas.log 
+ 1047  ls ../MoeSiteTest/mnk1_cmd_alphas/
+ 1048  vi ../MoeSiteTest/mnk1_cmd_alphas/nobad-aln-strip-apo-step10-180.pdb
+ 1049  python RunMDSiteFinder.py -o mnk1_alphas -y ../MNK1/nobad-aln-apo.pdb -t ../MNK1/nobad-aln-strip-apo-step10.dcd -p ../MoeSiteTest/mnk1_cmd_alphas/ >&  mnk1_alphas.log &
+ 1050  cd ../MoeSiteTest/
+ 1051  ls *txt
+ 1052  awk '{print  longcmd_step100_r1.4_sites.txt 
+ 1053  head -1 *txt | awk '{print $18"}'
+ 1054  head -1 *txt | awk '{print $19"}'
+ 1055  ls *txt
+ 1056  rm longcmd_step100_r1.4_sites.txt
+ 1057  a_moe
+ 1058  ls *txt
+ 1059  head longcmd_step100_r1.4_sites.txt 
+ 1060  ipython
+ 1061  vi longcmd_step100_r1.4_sites.txt 
+ 1062  head longcmd_step100_r1.4_sites.txt  | wc -l
+ 1063  head longcmd_step100_r1.4_sites.txt  
+ 1064  awk '{print NF}' < longcmd_step100_r1.4_sites.txt 
+ 1065  awk '{print NR}' < longcmd_step100_r1.4_sites.txt 
+ 1066  awk 'BEGIN {FS=","} {print NF}}' < longcmd_step100_r1.4_sites.txt 
+ 1067  awk 'BEGIN {FS=","} {print NF}' < longcmd_step100_r1.4_sites.txt 
+ 1068  ipython
+ 1069  vi ../MDSiteFinder/mnk1_alphas.log 
+ 1070  cd ../MDSiteFinder/
+ 1071  history > tmp
